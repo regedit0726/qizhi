@@ -12,22 +12,24 @@ public class MongoManager {
     /**
      * 主机地址
      */
-    private final static String HOST = null;
+    private static String host = null;
 
     /**
      * 主机端口
      */
-    private final static int PORT;
+    private static int port;
 
     /**
      * 连接数量
      */
-    private final static int POOLSIZE;
+    private static int poolsize;
 
     /**
      * 等待队列长度
      */
-    private final static int BLOCKSIZE;
+    private static int blocksize;
+
+
 
     private static MongoClient mongoClient;
 
