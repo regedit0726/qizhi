@@ -290,15 +290,7 @@ public class Application extends Controller
                 return ok("");
             }
 
-            String result = TextResponseXml.createInstance(toUserName,
-                    fromUserName, answer).document2String();
-            TestUtils.recordInFile("result = " + result, "result.txt");
-            String aesResult = new WXBizMsgCrypt().encryptMsg(result,
-                    timestamp, nonce);
-            TestUtils.recordInFile("aesResult = " + aesResult
-                    + "\r\n----------------------\r\n", "result.txt");
-            response().setContentType("text/xml; charset=utf-8");
-            return ok(aesResult);
+            return reply(answer);
         }
     }
 
@@ -399,13 +391,7 @@ public class Application extends Controller
         }
 
         //获取成功，则组装回复xml，加密并回复
-        String result = TextResponseXml.createInstance(toUserName,
-                fromUserName, answer).document2String();
-        TestUtils.recordInFile("result = " + result, "result.txt");
-        String aesResult = wxmc.encryptMsg(result, timestamp, nonce);
-        TestUtils.recordInFile("aesResult = " + aesResult
-                + "\r\n----------------------\r\n", "result.txt");
-        return ok(aesResult);
+        return reply(answer);
     }
 
     /**
