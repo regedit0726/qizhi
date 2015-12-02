@@ -2,10 +2,9 @@ package controllers;
 
 import Beans.TextResponseXml;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.Response;
 import common.HttpClientUtils;
 import common.WechatAPIURLUtils;
+import common.WechatThirdInformation;
 import controllers.authorization.AuthorizationEventReception;
 import controllers.wechatAes.AesException;
 import controllers.wechatAes.WXBizMsgCrypt;
@@ -18,8 +17,10 @@ import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import test.TestUtils;
+
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -52,7 +53,6 @@ public class Application extends Controller
      * 请求URL中时间戳变量名
      */
     private static final String REQUEST_TIMESTAMP = "timestamp";
-
 
     /**
      * 请求xml中接收的XPath
@@ -205,16 +205,25 @@ public class Application extends Controller
      */
     public Result index()
     {
-        return ok(index.render());
+        System.out.println(WechatThirdInformation.token);
+        System.out.println(WechatThirdInformation.aesKey);
+        System.out.println(WechatThirdInformation.appID);
+        System.out.println(WechatThirdInformation.appSecret);
+        return ok("");
     }
 
     /**
      * 接收微信服务器post的事件或消息
-     * @param wechatAppId 微信AppId
+     * 
+     * @param wechatAppId
+     *            微信AppId
      * @return Result
-     * @throws IOException IO异常
-     * @throws AesException 加解密异常
-     * @throws TransformerException 转换异常
+     * @throws IOException
+     *             IO异常
+     * @throws AesException
+     *             加解密异常
+     * @throws TransformerException
+     *             转换异常
      */
     @BodyParser.Of(BodyParser.Raw.class)
     public Result receivePost(String wechatAppId) throws IOException,
@@ -360,7 +369,7 @@ public class Application extends Controller
             if (ALLNET_PUBLISH_TEXT_CONTENT2.equals(splitContent[0]))
             {
                 // 模拟粉丝发送文本消息给专用测试公众号 请勿按照官方文档要求修改，否则无法通过测试
-                answer = splitContent[1] +ALLNET_PUBLISH_TEXT_REPLY_CONTENT2 ;
+                answer = splitContent[1] + ALLNET_PUBLISH_TEXT_REPLY_CONTENT2;
 
                 // Timer timer = new Timer();
                 // timer.schedule(new TimerTask() {
@@ -379,31 +388,35 @@ public class Application extends Controller
             }
             else
             {
-                //非全网发布测试消息，调用接口获取回复内容
+                // 非全网发布测试消息，调用接口获取回复内容
                 answer = new WechatProcess().processWechatMag(content);
             }
         }
 
-        //获取回复内容失败，返回空串，不回复
+        // 获取回复内容失败，返回空串，不回复
         if (answer == null)
         {
             return ok("");
         }
 
-        //获取成功，则组装回复xml，加密并回复
+        // 获取成功，则组装回复xml，加密并回复
         return reply(answer);
     }
 
     /**
      * 调用客服接口回复消息
-     * @param from 发送者
-     * @param to 接收者
-     * @param authCode 授权码
+     * 
+     * @param from
+     *            发送者
+     * @param to
+     *            接收者
+     * @param authCode
+     *            授权码
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public void replyApiTextMsg(String from, String to, String authCode, String content)
-            throws ExecutionException, InterruptedException
+    public void replyApiTextMsg(String from, String to, String authCode,
+            String content) throws ExecutionException, InterruptedException
     {
         controllers.authorization.Redirect redirect = new controllers.authorization.Redirect();
         try
@@ -430,7 +443,19 @@ public class Application extends Controller
         String responseBody = result.toString();
         TestUtils.recordInFile("result = " + responseBody, "result.txt");
 
+        String authorizerAccessToken = "";
+
         // 获取回复
-        String resp = HttpClientUtils.getResponseByPostMethodJson(WechatAPIURLUtils.getSendCustomMessageURL(), responseBody);
+        try
+        {
+            String resp = HttpClientUtils.getResponseByPostMethodJson(
+                    WechatAPIURLUtils
+                            .getSendCustomMessageURL(authorizerAccessToken),
+                    responseBody);
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
     }
 }
