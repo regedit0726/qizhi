@@ -14,7 +14,5 @@ GET      /receptionGet                          controllers.authorization.Author
 GET      /authorize                             controllers.authorization.WechatAuthorization.wechatAuthorize()
 GET      /redirect                              controllers.authorization.Redirect.authorizationRedirect()
 
-#text
-
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

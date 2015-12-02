@@ -1,10 +1,11 @@
 package controllers;
 
 import Beans.TextResponseXml;
+import Dao.MongoDBDao;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import common.HttpClientUtils;
 import common.WechatAPIURLUtils;
-import common.WechatThirdInformation;
 import controllers.authorization.AuthorizationEventReception;
 import controllers.wechatAes.AesException;
 import controllers.wechatAes.WXBizMsgCrypt;
@@ -21,6 +22,8 @@ import test.TestUtils;
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -165,6 +168,11 @@ public class Application extends Controller
     private String toUserName;
 
     /**
+     * 用于存放文本消息MsgId，用于排重，重复的消息丢弃
+     */
+    private static Set<String> messageSet = new HashSet<String>();
+
+    /**
      * 启动线程检查ticket是否已经获取了最新值 如果已经获取了最新值，则设定定时任务，定期更新AccessToken
      */
     static
@@ -205,10 +213,16 @@ public class Application extends Controller
      */
     public Result index()
     {
-        System.out.println(WechatThirdInformation.token);
-        System.out.println(WechatThirdInformation.aesKey);
-        System.out.println(WechatThirdInformation.appID);
-        System.out.println(WechatThirdInformation.appSecret);
+        String json = "{\"authorization_info\":{\"authorizer_appid\":\"wx5bb7a43a9bcb67ae\",\"authorizer_access_token\":\"-iwRZz0KyRpIEaLTwRheezKOaw6LKtEN6-_Q5XnhhEgSmjD1IvO-5yXyccFXiYeYIN2WNcvqmsTQWrPqF_xg7wFEhyZ29a0EGmlH26qHvInEo-otJK02YoeMBykip4JyZPPaALDCSS\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@fLj9sIUOQE0m7q37lhDaTM6aEVxokw5PObgywoVtRMY\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
+        String appID = "wx5bb7a43a9bcb67ae";
+//        MongoDBDao.getInstance().delete(appID);
+//        MongoDBDao.getInstance().update(appID, new String[]{"3600"});
+
+        JsonNode node = MongoDBDao.getInstance().findJsonNode(appID);
+        System.out.println(node.toString());
+//        JsonNode jsonNodeInfo = Json.parse(json);
+//        JsonNode node = jsonNodeInfo.get("authorization_info");
+//        MongoDBDao.getInstance().insert(node.toString());
         return ok("");
     }
 

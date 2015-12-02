@@ -1,5 +1,6 @@
 package controllers.authorization;
 
+import Dao.MongoDBDao;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import common.HttpClientUtils;
@@ -90,6 +91,8 @@ public class Redirect extends Controller
             // 将appid和刷新令牌暂时存储在内存当中
             authorizerAppid = authorizer_appid;
             authorizerRefreshToken = authorizer_refresh_token;
+            JsonNode node = jsonNodeInfo.get("authorization_info");
+            MongoDBDao.getInstance().insert(node.toString());
             return true;
         }
         else

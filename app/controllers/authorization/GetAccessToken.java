@@ -70,7 +70,7 @@ public class GetAccessToken
 
             // 获取回复
             Response resp = client
-                    .preparePost(WechatAPIURLUtils.getAcessTokenURL())
+                    .preparePost(WechatAPIURLUtils.getThirdAcessTokenURL())
                     .setHeader("Content-Type", "application/json;charset=utf-8")
                     .setBody(strBody).execute().get();
 

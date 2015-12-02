@@ -8,6 +8,10 @@ import java.net.URLEncoder;
  */
 public class WechatAPIURLUtils
 {
+    /**
+     * 获取（刷新）授权公众号的令牌接口地址
+     */
+    private static final String APIURL_PUBLIC_GET_TOKEN_API_URI = "https:// api.weixin.qq.com /cgi-bin/component/api_authorizer_token?component_access_token=";
 
     /**
      * 获取access_token接口地址
@@ -40,11 +44,21 @@ public class WechatAPIURLUtils
     private static final String APIURL_AUTHORIZATION_QUERY_AUTH_INFO = "https://api.weixin.qq.com/cgi-bin/component/api_query_auth?component_access_token=";
 
     /**
-     * 返回获取AceessToken的接口地址
+     * 返回获取公众号AceessToken的接口地址
      * 
      * @return 接口地址
      */
-    public static String getAcessTokenURL()
+    public static String getPublicAcessTokenURL()
+    {
+        return APIURL_PUBLIC_GET_TOKEN_API_URI;
+    }
+
+    /**
+     * 返回获取AceessToken的接口地址
+     *
+     * @return 接口地址
+     */
+    public static String getThirdAcessTokenURL()
     {
         return APIURL_AUTHORIZATION_GET_TOKEN_API_URI;
     }
