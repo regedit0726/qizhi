@@ -107,13 +107,22 @@ public class GetAccessToken
         // 用appId查询第三方平台信息
         MongoDBDao dao = MongoDBDao.getInstance();
         JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_Third_JSON_APPID, WechatThirdInformation.appID);
-        String token = jsonNode.get(
-                ApplicationConstants.DB_THIRD_JSON_ACCESS_TOKEN).asText();
-        String updateTime = jsonNode.get(
-                ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN).asText();
+        JsonNode temp = jsonNode.get(
+                ApplicationConstants.DB_THIRD_JSON_ACCESS_TOKEN);
+
+        String updateTime = null;
+        String token = null;
+
+        if(temp != null)
+        {
+            token = jsonNode.get(
+                    ApplicationConstants.DB_THIRD_JSON_ACCESS_TOKEN).asText();
+            updateTime = jsonNode.get(
+                    ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN).asText();
+        }
 
         // 如果数据库中的accessToken已过期，则调用接口重新获取
-        if (new Date().getTime() > TOKEN_PERIOD + Long.valueOf(updateTime))
+        if (temp == null || (new Date().getTime() > TOKEN_PERIOD + Long.valueOf(updateTime)))
         {
             //构造请求数据
             ObjectNode body = Json.newObject();
