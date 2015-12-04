@@ -1,5 +1,10 @@
 package common;
 
+import Dao.MongoDBDao;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import play.libs.Json;
+
 /**
  * Created by Administrator on 2015/11/28.
  */
@@ -54,18 +59,51 @@ public class WechatThirdInformation
         token = play.Configuration.root().getString(WECHAT_THIRD_TOKEN);
         aesKey = play.Configuration.root().getString(WECHAT_THIRD_AESKEY);
         appID = play.Configuration.root().getString(WECHAT_THIRD_APP_ID);
-        appSecret = play.Configuration.root().getString(WECHAT_THIRD_APP_SECRET);
+        appSecret = play.Configuration.root()
+                .getString(WECHAT_THIRD_APP_SECRET);
 
         if (token == null || aesKey == null || appID == null
                 || appSecret == null)
         {
             System.out.println("配置文件配置不全！");
         }
+        else
+        {
+            checkDataBase();
+        }
     }
 
-    // 执行初始化
-    static
+//    // 执行初始化
+//    static
+//    {
+//        init();
+//    }
+
+    /**
+     * 检查第三方平台信息是否已经存入数据库
+     * 如没有则存入数据库
+     */
+    private static void checkDataBase()
     {
-        init();
+        MongoDBDao dao = MongoDBDao.getInstance();
+        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_Third_JSON_APPID, appID);
+        if (jsonNode == null)
+        {
+            dao.insert(toJsonString());
+        }
+    }
+
+    /**
+     * 把第三方平台信息转换为Json格式的S字符串返回
+     * @return String
+     */
+    private static String toJsonString()
+    {
+        ObjectNode object = Json.newObject();
+        object.put(ApplicationConstants.DB_Third_JSON_APP_ID, appID);
+        object.put(ApplicationConstants.DB_Third_JSON_APP_SECRET, appSecret);
+        object.put(ApplicationConstants.DB_Third_JSON_TOKEN, token);
+        object.put(ApplicationConstants.DB_Third_JSON_AESKEY, aesKey);
+        return object.toString();
     }
 }

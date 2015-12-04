@@ -3,16 +3,24 @@ package Dao;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.mongodb.*;
 import com.mongodb.util.JSON;
+import common.WechatThirdInformation;
 import play.libs.Json;
 
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 
 /**
  * Created by Administrator on 2015/12/2.
  */
-public class MongoDBDao {
+public class MongoDBDao
+{
+    /**
+     * 配置文件中mongoDB连接地址Key值
+     */
+    private static final String PROPERTY_FILE_NAME = "mongoDB.properties";
+
     /**
      * 配置文件中mongoDB连接地址Key值
      */
@@ -51,32 +59,38 @@ public class MongoDBDao {
     /**
      * 执行初始化
      */
-    static {
+    static
+    {
         initDataBase();
+        WechatThirdInformation.init();
     }
 
     /**
      * 初始化MongoCollection实例
      */
     @SuppressWarnings("deprecation")
-    public static void initDataBase() {
+    public static void initDataBase()
+    {
         Properties p = new Properties();
-        try {
-            System.out.println("mongoDB init");
+        try
+        {
             // 载入配置文件
-            p.load(play.Play.application().resourceAsStream(
-                    "mongoDB.properties"));
-        } catch (Exception e) {
+            p.load(play.Play.application().resourceAsStream(PROPERTY_FILE_NAME));
+            System.out.println("mongoDB init----" + new Date().toString());
+        }
+        catch(Exception e)
+        {
             e.printStackTrace();
         }
         String uri = p.getProperty(MONGODB_URI);
         String dbName = p.getProperty(MONGODB_DB_NAME);
         String collectionName = p.getProperty(MONGODB_COLLECTION_NAME);
-        if (uri == null || dbName == null || collectionName == null) {
+        if (uri == null || dbName == null || collectionName == null)
+        {
             System.out.println("配置文件配置不全！");
             return;
         }
-        client = new MongoClient(new MongoClientURI("mongodb://qizhi:52174@mongodb.smartnlp.cn:52174/?authSource=cloud"));
+        client = new MongoClient(new MongoClientURI(uri));
         db = client.getDB(dbName);
         collection = db.getCollection(collectionName);
     }
@@ -84,7 +98,8 @@ public class MongoDBDao {
     /**
      * 私有化构造器，防止在外部实例化
      */
-    private MongoDBDao() {
+    private MongoDBDao()
+    {
     }
 
     /**
@@ -92,18 +107,21 @@ public class MongoDBDao {
      *
      * @return
      */
-    public static MongoDBDao getInstance() {
+    public static MongoDBDao getInstance()
+    {
         return dao;
     }
 
     /**
      * MongoClient关闭
      */
-    public synchronized void close() {
-        if (client != null) {
+    public synchronized void close()
+    {
+        if (client != null)
+        {
             client.close();
+            System.out.println("MongoDB closed.----" + new Date().toString());
         }
-        System.out.println("MongoDB closed.");
     }
 
     /**
@@ -111,9 +129,26 @@ public class MongoDBDao {
      *
      * @param jsonObject
      */
-    public void insert(String jsonObject) {
+    public void insert(String jsonObject)
+    {
+        insert(jsonObject, null);
+    }
+
+    /**
+     * 新增user
+     *
+     * @param jsonObject
+     */
+    public void insert(String jsonObject, Map<String, String> map)
+    {
         BasicDBObject object = (BasicDBObject) JSON.parse(jsonObject);
-        object.put("update_time_4_Token",new Date().getTime() + "");
+        if(map != null)
+        {
+            for(Map.Entry<String, String> entry:map.entrySet())
+            {
+                object.put(entry.getKey(), entry.getValue());
+            }
+        }
         System.out.println(object.toString());
         collection.insert(object);
     }
@@ -121,48 +156,54 @@ public class MongoDBDao {
     /**
      * 删除user
      *
-     * @param appId
+     * @param queryFieldName
+     *            查询属性名
+     * @param queryFieldValue
+     *            查询属性值
      */
-    public void delete(String appId) {
+    public void delete(String queryFieldName, String queryFieldValue)
+    {
         BasicDBObject object = new BasicDBObject();
-        object.put("authorizer_appid", appId);
+        object.put(queryFieldName, queryFieldValue);
         collection.remove(object);
     }
 
     /**
      * 修改user信息
      *
-     * @param appId
+     * @param queryFieldName
+     *            查询属性名
+     * @param queryFieldValue
+     *            查询属性值
      */
-    public void update(String appId, String[] values) {
-        update(appId, new String[]{"expires_in"}, values);
-    }
-
-    /**
-     * 修改user信息
-     *
-     * @param appId
-     */
-    public void update(String appId, String[] keys, String[] values) {
+    public void update(String queryFieldName, String queryFieldValue, Map<String, String> map)
+    {
         BasicDBObject object = new BasicDBObject();
-        object.put("authorizer_appid", appId);
-        DBObject newObject = find(appId);
-        if (keys != null && values != null && keys.length == values.length) {
-            for (int i = 0; i < keys.length; i++) {
-                newObject.put(keys[i], values[i]);
+        object.put(queryFieldName, queryFieldValue);
+        DBObject newObject = find(queryFieldName, queryFieldValue);
+        if (map != null)
+        {
+            for(Map.Entry<String, String> entry: map.entrySet())
+            {
+                newObject.put(entry.getKey(),entry.getValue());
             }
         }
         collection.update(object, newObject);
     }
 
     /**
-     * 查询user
+     * 根据指定属性，及对应值查询user,返回JsonNode对象
      *
-     * @param appId
+     * @param queryFieldName
+     *            查询属性名
+     * @param queryFieldValue
+     *            查询属性值
+     * @return JsonNode
      */
-    public JsonNode findJsonNode(String appId) {
-        DBObject object = find(appId);
-        if(object == null)
+    public JsonNode findJsonNode(String queryFieldName, String queryFieldValue)
+    {
+        DBObject object = find(queryFieldName, queryFieldValue);
+        if (object == null)
         {
             return null;
         }
@@ -170,19 +211,27 @@ public class MongoDBDao {
     }
 
     /**
-     * 查询user
+     * 根据指定属性，及对应值查询user
      *
-     * @param appId
+     * @param queryFieldName
+     *            查询属性名
+     * @param queryFieldValue
+     *            查询属性值
+     * @return DBObject
      */
-    public DBObject find(String appId) {
+    private DBObject find(String queryFieldName, String queryFieldValue)
+    {
         BasicDBObject object = new BasicDBObject();
-        object.put("authorizer_appid", appId);
+        object.put(queryFieldName, queryFieldValue);
         DBCursor cursor = collection.find(object);
         Iterator<DBObject> iterator;
-        if (cursor != null) {
-            iterator = collection.find(object).iterator();
+        System.out.println("cursor not null");
+        iterator = collection.find(object).iterator();
+        if(iterator.hasNext())
+        {
             return iterator.next();
         }
+
         return null;
     }
 }

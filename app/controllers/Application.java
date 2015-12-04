@@ -1,16 +1,13 @@
 package controllers;
 
-import Beans.TextResponseXml;
-import Dao.MongoDBDao;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import common.HttpClientUtils;
-import common.WechatAPIURLUtils;
-import controllers.authorization.AuthorizationEventReception;
-import controllers.wechatAes.AesException;
-import controllers.wechatAes.WXBizMsgCrypt;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.xml.transform.TransformerException;
+
 import org.w3c.dom.Document;
-import play.libs.Json;
+
 import play.libs.XML;
 import play.libs.XPath;
 import play.mvc.BodyParser;
@@ -18,15 +15,14 @@ import play.mvc.Controller;
 import play.mvc.Http;
 import play.mvc.Result;
 import test.TestUtils;
+import Beans.TextResponseXml;
+import Dao.MongoDBDao;
 
-import javax.xml.transform.TransformerException;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
+import common.ApplicationConstants;
+
+import controllers.wechatAes.AesException;
+import controllers.wechatAes.WXBizMsgCrypt;
+
 
 @SuppressWarnings("deprecation")
 public class Application extends Controller
@@ -46,26 +42,6 @@ public class Application extends Controller
      * 每日获取AccessToken的接口调用次数最多为2000次（腾讯所定）
      */
     private static final long TASK_PERIOD = 6000 * 1000;
-
-    /**
-     * 请求URL中msg_signature变量名
-     */
-    private static final String REQUEST_MSG_SIGNATURE = "msg_signature";
-
-    /**
-     * 请求URL中时间戳变量名
-     */
-    private static final String REQUEST_TIMESTAMP = "timestamp";
-
-    /**
-     * 请求xml中接收的XPath
-     */
-    private static final String REQUEST_NOUNCE = "nonce";
-
-    /**
-     * 请求xml中加密消息的XPath
-     */
-    private static final String REQUEST_XML_ENCRYPT = "//Encrypt";
 
     /**
      * 请求xml中接收者的XPath
@@ -173,60 +149,6 @@ public class Application extends Controller
     private static Set<String> messageSet = new HashSet<String>();
 
     /**
-     * 启动线程检查ticket是否已经获取了最新值 如果已经获取了最新值，则设定定时任务，定期更新AccessToken
-     */
-    static
-    {
-        new Thread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                while (AuthorizationEventReception.ticket != null)
-                {
-                    try
-                    {
-                        Thread.sleep(SLEEP_PERIOD);
-                    }
-                    catch(InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-                Timer timer = new Timer();
-                timer.scheduleAtFixedRate(new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-
-                    }
-                }, Application.TASK_DELAY, Application.TASK_PERIOD);
-            }
-        }).start();
-    }
-
-    /**
-     * 跳转主页
-     * 
-     * @return
-     */
-    public Result index()
-    {
-        String json = "{\"authorization_info\":{\"authorizer_appid\":\"wx5bb7a43a9bcb67ae\",\"authorizer_access_token\":\"-iwRZz0KyRpIEaLTwRheezKOaw6LKtEN6-_Q5XnhhEgSmjD1IvO-5yXyccFXiYeYIN2WNcvqmsTQWrPqF_xg7wFEhyZ29a0EGmlH26qHvInEo-otJK02YoeMBykip4JyZPPaALDCSS\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@fLj9sIUOQE0m7q37lhDaTM6aEVxokw5PObgywoVtRMY\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
-        String appID = "wx5bb7a43a9bcb67ae";
-//        MongoDBDao.getInstance().delete(appID);
-//        MongoDBDao.getInstance().update(appID, new String[]{"3600"});
-
-        JsonNode node = MongoDBDao.getInstance().findJsonNode(appID);
-        System.out.println(node.toString());
-//        JsonNode jsonNodeInfo = Json.parse(json);
-//        JsonNode node = jsonNodeInfo.get("authorization_info");
-//        MongoDBDao.getInstance().insert(node.toString());
-        return ok("");
-    }
-
-    /**
      * 接收微信服务器post的事件或消息
      * 
      * @param wechatAppId
@@ -244,16 +166,16 @@ public class Application extends Controller
             AesException, TransformerException
     {
         // 获取URL参数
-        String msg_signature = request().getQueryString(REQUEST_MSG_SIGNATURE);
-        timestamp = request().getQueryString(REQUEST_TIMESTAMP);
-        nonce = request().getQueryString(REQUEST_NOUNCE);
+        String msg_signature = request().getQueryString(ApplicationConstants.REQUEST_MSG_SIGNATURE);
+        timestamp = request().getQueryString(ApplicationConstants.REQUEST_TIMESTAMP);
+        nonce = request().getQueryString(ApplicationConstants.REQUEST_NOUNCE);
         // 获取加密数据包
         Http.RawBuffer buf = request().body().asRaw();
         byte[] bytes = buf.asBytes();
-        String postData = new String(bytes, HttpClientUtils.CHARSET);
+        String postData = new String(bytes, ApplicationConstants.CHARSET);
         TestUtils.recordInFile(postData, "post.txt");
         Document encryptDom = XML.fromString(postData);
-        String encrypt = XPath.selectText(REQUEST_XML_ENCRYPT, encryptDom);
+        String encrypt = XPath.selectText(ApplicationConstants.REQUEST_XML_ENCRYPT, encryptDom);
 
         // 解密
         WXBizMsgCrypt wxmc = new WXBizMsgCrypt();
@@ -283,8 +205,10 @@ public class Application extends Controller
                 String event = XPath.selectText(REQUEST_XML_EVENT_TYPE, dom);
                 return ok("");
             }
-
-            return ok("");
+            else
+            {
+                return reply("我不明白你的意思");
+            }
         }
     }
 
@@ -300,21 +224,36 @@ public class Application extends Controller
         toUserName = XPath.selectText(REQUEST_XML_TO_USER_NAME, dom);
         fromUserName = XPath.selectText(REQUEST_XML_FROM_USER_NAME, dom);
         String content = XPath.selectText(REQUEST_XML_TEXT_CONTENT, dom);
+        String msgId = XPath.selectText(REQUEST_XML_TEXT_MSGID, dom);
 
+        //无content内容不回复
         if (content == null)
         {
             return ok("");
         }
+
+        //检查是否微信服务器因超时5秒而重发的请求
+        if(messageSet.contains(msgId))
+        {
+            return null;
+        }
         else
         {
-            String answer = new WechatProcess().processWechatMag(content);
-            if (answer == null)
+            synchronized (messageSet)
             {
-                return ok("");
+                messageSet.add(msgId);
             }
-
-            return reply(answer);
         }
+
+        //调用接口获取回答
+        String answer = new WechatProcess().processWechatMag(content);
+
+        //把msgId从消息队列中删掉
+        synchronized (messageSet)
+        {
+            messageSet.remove(msgId);
+        }
+        return reply(answer==null? "" : answer);
     }
 
     private Result reply(String answer) throws AesException
@@ -338,17 +277,17 @@ public class Application extends Controller
     @BodyParser.Of(BodyParser.Raw.class)
     public Result publish(String content) throws Exception
     {
-        String msg_signature = request().getQueryString(REQUEST_MSG_SIGNATURE);
-        timestamp = request().getQueryString(REQUEST_TIMESTAMP);
-        nonce = request().getQueryString(REQUEST_NOUNCE);
+        String msg_signature = request().getQueryString(ApplicationConstants.REQUEST_MSG_SIGNATURE);
+        timestamp = request().getQueryString(ApplicationConstants.REQUEST_TIMESTAMP);
+        nonce = request().getQueryString(ApplicationConstants.REQUEST_NOUNCE);
 
         Http.RawBuffer buf = request().body().asRaw();
         byte[] bytes = buf.asBytes();
 
-        String postData = new String(bytes, HttpClientUtils.CHARSET);
+        String postData = new String(bytes, ApplicationConstants.CHARSET);
         TestUtils.recordInFile(postData, "publish.txt");
         Document encryptDom = XML.fromString(postData);
-        String encrypt = XPath.selectText(REQUEST_XML_ENCRYPT, encryptDom);
+        String encrypt = XPath.selectText(ApplicationConstants.REQUEST_XML_ENCRYPT, encryptDom);
 
         /* 解密 */
         WXBizMsgCrypt wxmc = new WXBizMsgCrypt();
@@ -384,27 +323,16 @@ public class Application extends Controller
             {
                 // 模拟粉丝发送文本消息给专用测试公众号 请勿按照官方文档要求修改，否则无法通过测试
                 answer = splitContent[1] + ALLNET_PUBLISH_TEXT_REPLY_CONTENT2;
-
-                // Timer timer = new Timer();
-                // timer.schedule(new TimerTask() {
-                // @Override
-                // public void run() {
-                // try {
-                // replyApiTextMsg(fromUserName, toUserName, splitContent[1]);
-                // } catch (ExecutionException e) {
-                // e.printStackTrace();
-                // } catch (InterruptedException e) {
-                // e.printStackTrace();
-                // }
-                // }
-                // }, 10000);
-                // return ok("");
             }
             else
             {
                 // 非全网发布测试消息，调用接口获取回复内容
                 answer = new WechatProcess().processWechatMag(content);
             }
+        }
+        else
+        {
+            answer = "我不明白你的意思";
         }
 
         // 获取回复内容失败，返回空串，不回复
@@ -418,58 +346,25 @@ public class Application extends Controller
     }
 
     /**
-     * 调用客服接口回复消息
-     * 
-     * @param from
-     *            发送者
-     * @param to
-     *            接收者
-     * @param authCode
-     *            授权码
-     * @throws ExecutionException
-     * @throws InterruptedException
+     * 跳转主页
+     * @return Result
      */
-    public void replyApiTextMsg(String from, String to, String authCode,
-            String content) throws ExecutionException, InterruptedException
+    @Deprecated
+    public Result index()
     {
-        controllers.authorization.Redirect redirect = new controllers.authorization.Redirect();
-        try
-        {
-            redirect.getAuthInfo(authCode);
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-            return;
-        }
+//        String json = "{\"authorization_info\":{\"authorizer_appid\":\"wx5bb7a43a9bcb67ae\",\"authorizer_access_token\":\"-iwRZz0KyRpIEaLTwRheezKOaw6LKtEN6-_Q5XnhhEgSmjD1IvO-5yXyccFXiYeYIN2WNcvqmsTQWrPqF_xg7wFEhyZ29a0EGmlH26qHvInEo-otJK02YoeMBykip4JyZPPaALDCSS\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@fLj9sIUOQE0m7q37lhDaTM6aEVxokw5PObgywoVtRMY\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
+//        String appID = "wx5bb7a43a9bcb67ae";
+//        String appID = "wx2e14202694e67e0b";
+//        MongoDBDao.getInstance().delete(ApplicationConstants.DB_Third_JSON_APP_ID, appID);
+//        System.out.println("delete");
+//        MongoDBDao.getInstance().delete(ApplicationConstants.DB_USER_JSON_APPID, appID);
+//        MongoDBDao.getInstance().update(appID, new String[]{"3600"});
 
-        String url = "https://api.weixin.qq.com/cgi-bin/message/custom/send?access_token="
-                + redirect.getAuthorizer_access_token();
-        TestUtils.recordInFile(url, "url.txt");
-        // 设置request消息体
-
-        ObjectNode result = Json.newObject();
-        ObjectNode text = Json.newObject();
-        text.put("content", content);
-        result.put("touser", to);
-        result.put("msgtype", REQUEST_XML_MSGTYPE_TEXT);
-        result.put(REQUEST_XML_MSGTYPE_TEXT, text);
-        String responseBody = result.toString();
-        TestUtils.recordInFile("result = " + responseBody, "result.txt");
-
-        String authorizerAccessToken = "";
-
-        // 获取回复
-        try
-        {
-            String resp = HttpClientUtils.getResponseByPostMethodJson(
-                    WechatAPIURLUtils
-                            .getSendCustomMessageURL(authorizerAccessToken),
-                    responseBody);
-        }
-        catch(UnsupportedEncodingException e)
-        {
-            e.printStackTrace();
-        }
+//        JsonNode node = MongoDBDao.getInstance().findJsonNode(ApplicationConstants.DB_USER_JSON_APPID, appID);
+//        System.out.println(node.toString());
+//        JsonNode jsonNodeInfo = Json.parse(json);
+//        JsonNode node = jsonNodeInfo.get("authorization_info");
+//        MongoDBDao.getInstance().insert(node.toString());
+        return ok(views.html.index.render());
     }
 }

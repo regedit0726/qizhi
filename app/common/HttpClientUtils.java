@@ -1,7 +1,6 @@
 package common;
 
 import com.ning.http.client.AsyncHttpClient;
-
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
@@ -11,14 +10,9 @@ import java.util.concurrent.ExecutionException;
 public class HttpClientUtils
 {
     /**
-     * 编码格式
-     */
-    public static final String CHARSET = "UTF-8";
-
-    /**
      * 头部编码Key
      */
-    public static final String HEADER_CHARSET = "charset";
+    private static final String HEADER_CHARSET = "charset";
 
     /**
      * 请求内容类型
@@ -116,7 +110,7 @@ public class HttpClientUtils
     {
         try {
             return br.setHeader(HEADER_CONTENT_TYPE, content)
-                    .setHeader(HEADER_CHARSET, CHARSET).setBody(requestBody)
+                    .setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET).setBody(requestBody)
                     .execute().get().getResponseBody();
         } catch (ExecutionException | InterruptedException | IOException e) {
             e.printStackTrace();
