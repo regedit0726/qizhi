@@ -37,7 +37,7 @@ public class WechatAPIURLUtils
     /**
      * 获取（刷新）授权公众号的令牌接口地址
      */
-    private static final String APIURL_PUBLIC_GET_TOKEN_API_URI = "https:// api.weixin.qq.com /cgi-bin/component/api_authorizer_token?component_access_token=";
+    private static final String APIURL_PUBLIC_GET_TOKEN_API_URI = "https://api.weixin.qq.com/cgi-bin/component/api_authorizer_token?component_access_token=";
 
     /**
      * 发送客服消息接口地址
@@ -149,7 +149,7 @@ public class WechatAPIURLUtils
      * @throws UnsupportedEncodingException
      */
     public static String getQueryMenuURL(String acessToken) throws UnsupportedEncodingException {
-        return APIURL_PUBLIC_DELETE_MENU + URLEncoder.encode(acessToken, ApplicationConstants.CHARSET);
+        return APIURL_PUBLIC_GET_MENU + URLEncoder.encode(acessToken, ApplicationConstants.CHARSET);
     }
 
     /**
@@ -159,6 +159,6 @@ public class WechatAPIURLUtils
      * @throws UnsupportedEncodingException
      */
     public static String getDeleteMenuURL(String acessToken) throws UnsupportedEncodingException {
-        return APIURL_PUBLIC_GET_MENU + URLEncoder.encode(acessToken, ApplicationConstants.CHARSET);
+        return APIURL_PUBLIC_DELETE_MENU + URLEncoder.encode(acessToken, ApplicationConstants.CHARSET);
     }
 }

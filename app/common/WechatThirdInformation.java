@@ -86,7 +86,7 @@ public class WechatThirdInformation
     private static void checkDataBase()
     {
         MongoDBDao dao = MongoDBDao.getInstance();
-        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_Third_JSON_APPID, appID);
+        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_Third_JSON_APP_ID, appID);
         if (jsonNode == null)
         {
             dao.insert(toJsonString());

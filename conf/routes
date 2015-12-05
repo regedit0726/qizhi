@@ -16,7 +16,7 @@ GET      /redirect                              controllers.authorization.Wechat
 
 #menu
 POST    /createMenu                             controllers.MenuApplication.createMenu()
-POST    /queryMenu                              controllers.MenuApplication.queryMenu()
+GET    /queryMenu                              controllers.MenuApplication.queryMenu()
 POST    /deleteMenu                             controllers.MenuApplication.deleteMenu()
 
 # Map static resources from the /public folder to the /assets URL path

@@ -225,7 +225,6 @@ public class MongoDBDao
         object.put(queryFieldName, queryFieldValue);
         DBCursor cursor = collection.find(object);
         Iterator<DBObject> iterator;
-        System.out.println("cursor not null");
         iterator = collection.find(object).iterator();
         if(iterator.hasNext())
         {

@@ -6,6 +6,7 @@ import java.util.Set;
 
 import javax.xml.transform.TransformerException;
 
+import common.HttpClientUtils;
 import org.w3c.dom.Document;
 
 import play.libs.XML;
@@ -22,7 +23,6 @@ import common.ApplicationConstants;
 
 import controllers.wechatAes.AesException;
 import controllers.wechatAes.WXBizMsgCrypt;
-
 
 @SuppressWarnings("deprecation")
 public class Application extends Controller
@@ -166,8 +166,10 @@ public class Application extends Controller
             AesException, TransformerException
     {
         // 获取URL参数
-        String msg_signature = request().getQueryString(ApplicationConstants.REQUEST_MSG_SIGNATURE);
-        timestamp = request().getQueryString(ApplicationConstants.REQUEST_TIMESTAMP);
+        String msg_signature = request().getQueryString(
+                ApplicationConstants.REQUEST_MSG_SIGNATURE);
+        timestamp = request().getQueryString(
+                ApplicationConstants.REQUEST_TIMESTAMP);
         nonce = request().getQueryString(ApplicationConstants.REQUEST_NOUNCE);
         // 获取加密数据包
         Http.RawBuffer buf = request().body().asRaw();
@@ -175,7 +177,8 @@ public class Application extends Controller
         String postData = new String(bytes, ApplicationConstants.CHARSET);
         TestUtils.recordInFile(postData, "post.txt");
         Document encryptDom = XML.fromString(postData);
-        String encrypt = XPath.selectText(ApplicationConstants.REQUEST_XML_ENCRYPT, encryptDom);
+        String encrypt = XPath.selectText(
+                ApplicationConstants.REQUEST_XML_ENCRYPT, encryptDom);
 
         // 解密
         WXBizMsgCrypt wxmc = new WXBizMsgCrypt();
@@ -226,14 +229,14 @@ public class Application extends Controller
         String content = XPath.selectText(REQUEST_XML_TEXT_CONTENT, dom);
         String msgId = XPath.selectText(REQUEST_XML_TEXT_MSGID, dom);
 
-        //无content内容不回复
+        // 无content内容不回复
         if (content == null)
         {
             return ok("");
         }
 
-        //检查是否微信服务器因超时5秒而重发的请求
-        if(messageSet.contains(msgId))
+        // 检查是否微信服务器因超时5秒而重发的请求
+        if (messageSet.contains(msgId))
         {
             return null;
         }
@@ -245,15 +248,15 @@ public class Application extends Controller
             }
         }
 
-        //调用接口获取回答
+        // 调用接口获取回答
         String answer = new WechatProcess().processWechatMag(content);
 
-        //把msgId从消息队列中删掉
+        // 把msgId从消息队列中删掉
         synchronized (messageSet)
         {
             messageSet.remove(msgId);
         }
-        return reply(answer==null? "" : answer);
+        return reply(answer == null ? "" : answer);
     }
 
     private Result reply(String answer) throws AesException
@@ -277,8 +280,10 @@ public class Application extends Controller
     @BodyParser.Of(BodyParser.Raw.class)
     public Result publish(String content) throws Exception
     {
-        String msg_signature = request().getQueryString(ApplicationConstants.REQUEST_MSG_SIGNATURE);
-        timestamp = request().getQueryString(ApplicationConstants.REQUEST_TIMESTAMP);
+        String msg_signature = request().getQueryString(
+                ApplicationConstants.REQUEST_MSG_SIGNATURE);
+        timestamp = request().getQueryString(
+                ApplicationConstants.REQUEST_TIMESTAMP);
         nonce = request().getQueryString(ApplicationConstants.REQUEST_NOUNCE);
 
         Http.RawBuffer buf = request().body().asRaw();
@@ -287,7 +292,8 @@ public class Application extends Controller
         String postData = new String(bytes, ApplicationConstants.CHARSET);
         TestUtils.recordInFile(postData, "publish.txt");
         Document encryptDom = XML.fromString(postData);
-        String encrypt = XPath.selectText(ApplicationConstants.REQUEST_XML_ENCRYPT, encryptDom);
+        String encrypt = XPath.selectText(
+                ApplicationConstants.REQUEST_XML_ENCRYPT, encryptDom);
 
         /* 解密 */
         WXBizMsgCrypt wxmc = new WXBizMsgCrypt();
@@ -347,24 +353,106 @@ public class Application extends Controller
 
     /**
      * 跳转主页
+     * 
      * @return Result
      */
     @Deprecated
     public Result index()
     {
-//        String json = "{\"authorization_info\":{\"authorizer_appid\":\"wx5bb7a43a9bcb67ae\",\"authorizer_access_token\":\"-iwRZz0KyRpIEaLTwRheezKOaw6LKtEN6-_Q5XnhhEgSmjD1IvO-5yXyccFXiYeYIN2WNcvqmsTQWrPqF_xg7wFEhyZ29a0EGmlH26qHvInEo-otJK02YoeMBykip4JyZPPaALDCSS\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@fLj9sIUOQE0m7q37lhDaTM6aEVxokw5PObgywoVtRMY\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
-//        String appID = "wx5bb7a43a9bcb67ae";
-//        String appID = "wx2e14202694e67e0b";
-//        MongoDBDao.getInstance().delete(ApplicationConstants.DB_Third_JSON_APP_ID, appID);
-//        System.out.println("delete");
-//        MongoDBDao.getInstance().delete(ApplicationConstants.DB_USER_JSON_APPID, appID);
-//        MongoDBDao.getInstance().update(appID, new String[]{"3600"});
+        // String json =
+        // "{\"authorization_info\":{\"authorizer_appid\":\"wx5bb7a43a9bcb67ae\",\"authorizer_access_token\":\"-iwRZz0KyRpIEaLTwRheezKOaw6LKtEN6-_Q5XnhhEgSmjD1IvO-5yXyccFXiYeYIN2WNcvqmsTQWrPqF_xg7wFEhyZ29a0EGmlH26qHvInEo-otJK02YoeMBykip4JyZPPaALDCSS\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@fLj9sIUOQE0m7q37lhDaTM6aEVxokw5PObgywoVtRMY\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
+        // String appID = "wx5bb7a43a9bcb67ae";
+        // String appID = "wx2e14202694e67e0b";
+        // String appID = "wxe89b28b26851800c";
+        // MongoDBDao.getInstance().delete(ApplicationConstants.DB_USER_JSON_APP_ID,
+        // appID);
+        // System.out.println("delete");
+        // MongoDBDao.getInstance().delete(ApplicationConstants.DB_USER_JSON_APP_ID,
+        // appID);
+        // MongoDBDao.getInstance().update(appID, new String[]{"3600"});
 
-//        JsonNode node = MongoDBDao.getInstance().findJsonNode(ApplicationConstants.DB_USER_JSON_APPID, appID);
-//        System.out.println(node.toString());
-//        JsonNode jsonNodeInfo = Json.parse(json);
-//        JsonNode node = jsonNodeInfo.get("authorization_info");
-//        MongoDBDao.getInstance().insert(node.toString());
+        // JsonNode node =
+        // MongoDBDao.getInstance().findJsonNode(ApplicationConstants.DB_USER_JSON_APPID,
+        // appID);
+        // System.out.println(node.toString());
+        // JsonNode jsonNodeInfo = Json.parse(json);
+        // JsonNode node = jsonNodeInfo.get("authorization_info");
+        // MongoDBDao.getInstance().insert(node.toString());
+
+//         String requestBody = "{\n" +
+//         "     \"button\":[\n" +
+//         "     {\t\n" +
+//         "          \"type\":\"view\",\n" +
+//         "          \"name\":\"今日体育\",\n" +
+//         "          \"url\":\"http://sports.163.com/\"\n" +
+//         "      },\n" +
+//         "      {\n" +
+//         "           \"name\":\"菜单\",\n" +
+//         "           \"sub_button\":[\n" +
+//         "           {\t\n" +
+//         "               \"type\":\"view\",\n" +
+//         "               \"name\":\"搜索\",\n" +
+//         "               \"url\":\"http://www.soso.com/\"\n" +
+//         "            },\n" +
+//         "            {\n" +
+//         "               \"type\":\"view\",\n" +
+//         "               \"name\":\"视频\",\n" +
+//         "               \"url\":\"http://v.qq.com/\"\n" +
+//         "            },\n" +
+//         "            {\n" +
+//         "               \"type\":\"view\",\n" +
+//         "               \"name\":\"赞一下我们\",\n" +
+//         "               \"url\":\"http://www.baidu.com/\"\n" +
+//         "            }]\n" +
+//         "       }]\n" +
+//         " }";
+
+
+//        String requestBody = "{\n" +
+//                "     \"button\":[\n" +
+//                "     {\t\n" +
+//                "          \"type\":\"view\",\n" +
+//                "          \"name\":\"今日体育\",\n" +
+//                "          \"url\":\"http://sports.163.com/\"\n" +
+//                "      },\n" +
+//                "      {\n" +
+//                "           \"name\":\"菜单\",\n" +
+//                "           \"sub_button\":[\n" +
+//                "           {\t\n" +
+//                "               \"type\":\"view\",\n" +
+//                "               \"name\":\"搜索\",\n" +
+//                "               \"url\":\"http://www.soso.com/\"\n" +
+//                "            },\n" +
+//                "            {\n" +
+//                "               \"type\":\"view\",\n" +
+//                "               \"name\":\"视频\",\n" +
+//                "               \"url\":\"http://v.qq.com/\"\n" +
+//                "            }\n" +
+//                "       }]\n" +
+//                " }";
+
+        String requestBody ="{\"button\":\"\"}";
+
+//         String requestBody = "{\n" +
+//         "     \"button\":[\n" +
+//         "     {\t\n" +
+//         "          \"type\":\"view\",\n" +
+//         "          \"name\":\"今日体育\",\n" +
+//         "          \"url\":\"http://sports.163.com/\"\n" +
+//         "      }\n" +
+//         " ]}";
+         String response =
+         HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/createMenu?appID=wx5bb7a43a9bcb67ae&menu="
+         + requestBody, "{}");
+
+//        String response =
+//        HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/deleteMenu?appID=wx5bb7a43a9bcb67ae&menu="
+//                + requestBody, "{}");
+
+//        String response = HttpClientUtils
+//                .getResponseByGetMethod("http://mongo.smartnlp.cn/queryMenu?appID=wx5bb7a43a9bcb67ae");
+//        System.out.println(response);
+
         return ok(views.html.index.render());
     }
 }

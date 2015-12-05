@@ -42,7 +42,7 @@ public class WechatAuthorization extends Controller
     /**
      * 回调地址
      */
-    private static String REDIRECT_URL = "http://mongo.smartnlp.cn/redirect?userID=";
+    private static String REDIRECT_URL = "http://mongo.smartnlp.cn/redirect?appKey=";
 
     /**
      * 请求授权信息的请求体中的授权码Key值
@@ -57,7 +57,7 @@ public class WechatAuthorization extends Controller
     /**
      * 奇智用户ID（机器人ID或用户ID等）
      */
-    private static final String REDIRECT_REQUEST_QUERY_USERID = "userID";
+    private static final String REDIRECT_REQUEST_QUERY_appKey = "appKey";
 
     /**
      * 预授权码Key值
@@ -75,18 +75,18 @@ public class WechatAuthorization extends Controller
     {
         // 获取预授权码
         String pre_code = getPreAuthCode();
-        String userID = request().getQueryString("userID");
-        if(userID == null)
+        String appKey = request().getQueryString("appKey");
+        System.out.println(appKey);
+        if (appKey == null)
         {
-            userID = "12345789";
+            appKey = "12345789";
         }
-        System.out.println(userID);
 
         if (pre_code != null)
         {
             // 跳转授权页面
             String url = WechatAPIURLUtils.getAuthorizationURL(pre_code,
-                    REDIRECT_URL + userID);
+                    REDIRECT_URL + appKey);
             return redirect(url);
         }
         else
@@ -97,7 +97,7 @@ public class WechatAuthorization extends Controller
     }
 
     @SuppressWarnings("deprecation")
-    public String getPreAuthCode() throws Exception
+    private String getPreAuthCode() throws Exception
     {
         /* 获取AccessToken */
         GetAccessToken gat = new GetAccessToken();
@@ -105,14 +105,16 @@ public class WechatAuthorization extends Controller
 
         if (accessToken != null)
         {
-            //构造POST请求数据
+            // 构造POST请求数据
             ObjectNode body = Json.newObject();
-            body.put(ApplicationConstants.DB_Third_JSON_APPID,
+            body.put(ApplicationConstants.DB_Third_JSON_APP_ID,
                     WechatThirdInformation.appID);
             String requestBody = body.toString();
 
-            //调用接口获取预授权码
-            String response = HttpClientUtils.getResponseByPostMethodJson(WechatAPIURLUtils.getPreAuthCodeRUL(accessToken), requestBody);
+            // 调用接口获取预授权码
+            String response = HttpClientUtils.getResponseByPostMethodJson(
+                    WechatAPIURLUtils.getPreAuthCodeRUL(accessToken),
+                    requestBody);
             JsonNode jsonNode = Json.parse(response);
             TestUtils.recordInFile(jsonNode.toString(), "pre.txt");
             String pre_auth_code = jsonNode.get(PRE_AUTH_CODE).asText();
@@ -136,6 +138,7 @@ public class WechatAuthorization extends Controller
 
     /**
      * 接收微信服务器登录授权回调
+     * 
      * @return Result
      * @throws Exception
      */
@@ -144,7 +147,7 @@ public class WechatAuthorization extends Controller
         // 获取授权码
         String authCode = request().getQueryString(
                 REDIRECT_REQUEST_QUERY_AUTH_CODE);
-        String userID = request().getQueryString(REDIRECT_REQUEST_QUERY_USERID);
+        String appKey = request().getQueryString(REDIRECT_REQUEST_QUERY_appKey);
 
         // authCode获取失败
         if (authCode == null)
@@ -164,7 +167,7 @@ public class WechatAuthorization extends Controller
             return ok();
         }
 
-        if (getAuthInfo(authCode, accessToken, userID))
+        if (getAuthInfo(authCode, accessToken, appKey))
         {
             // 返回到授权结束后的指定页面
             return redirect("");
@@ -179,25 +182,30 @@ public class WechatAuthorization extends Controller
 
     /**
      * 获取授权信息并
+     * 
      * @param authcode
+     *            授权码
      * @param accessToken
-     * @param userID
-     * @return
+     *            acessToken
+     * @param appKey
+     *            用户ID
+     * @return boolean
      * @throws IOException
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public boolean getAuthInfo(String authcode, String accessToken, String userID)
-            throws IOException, ExecutionException, InterruptedException
+    public boolean getAuthInfo(String authcode, String accessToken,
+            String appKey) throws IOException, ExecutionException,
+            InterruptedException
     {
         // 设置request消息体
         ObjectNode body = Json.newObject();
-        body.put(ApplicationConstants.DB_Third_JSON_APPID,
+        body.put(ApplicationConstants.DB_Third_JSON_APP_ID,
                 WechatThirdInformation.appID);
         body.put(REDIRECT_JSON_AUTH_CODE, authcode);
         String requestBody = body.toString();
 
-        // 获取授权方appid和刷新令牌
+        // 发送post请求，获取授权方appid和刷新令牌
         String resBody = HttpClientUtils.getResponseByPostMethodJson(
                 WechatAPIURLUtils.getAuthInfoURL(accessToken), requestBody);
         JsonNode jsonNodeInfo = Json.parse(resBody);
@@ -213,33 +221,15 @@ public class WechatAuthorization extends Controller
         Map<String, String> map = new HashMap<String, String>();
         map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN,
                 new Date().getTime() + "");
-        map.put(ApplicationConstants.DB_USER_JSON_USER_ID, userID);
-        MongoDBDao.getInstance().insert(node.toString());
+        map.put(ApplicationConstants.DB_USER_JSON_ROBOT_ID, appKey);
+        MongoDBDao.getInstance().insert(node.toString(), map);
         return true;
     }
-
-//    public boolean getAuthInfo(String auth_code) throws Exception
-//    {
-//        String accessToken = GetAccessToken.getThirdAccessToken();
-//        // 获取accessToken
-//        if (accessToken == null)
-//        {
-//            // 获取component_access_token
-//            GetAccessToken gat = new GetAccessToken();
-//            accessToken = gat.getThirdAccessToken();
-//            if (accessToken == null)
-//            {
-//                return false;
-//            }
-//        }
-//
-//        return getAuthInfo(auth_code, accessToken, null);
-//    }
 
     /**
      * 接收ticket推送或取消授权事件推送
      * 
-     * @return
+     * @return Result
      * @throws Exception
      */
     @SuppressWarnings("deprecation")
@@ -247,9 +237,12 @@ public class WechatAuthorization extends Controller
     public Result receiveTicket() throws Exception
     {
         // 获取URL参数
-        String msg_signature = request().getQueryString(ApplicationConstants.REQUEST_MSG_SIGNATURE);
-        String timestamp = request().getQueryString(ApplicationConstants.REQUEST_TIMESTAMP);
-        String nonce = request().getQueryString(ApplicationConstants.REQUEST_NOUNCE);
+        String msg_signature = request().getQueryString(
+                ApplicationConstants.REQUEST_MSG_SIGNATURE);
+        String timestamp = request().getQueryString(
+                ApplicationConstants.REQUEST_TIMESTAMP);
+        String nonce = request().getQueryString(
+                ApplicationConstants.REQUEST_NOUNCE);
         if (msg_signature != null && timestamp != null && nonce != null)
         {
             // 获取加密POST数据包
@@ -257,9 +250,10 @@ public class WechatAuthorization extends Controller
             byte[] bytes = buf.asBytes();
             String postData = new String(bytes, ApplicationConstants.CHARSET);
             Document dom = XML.fromString(postData);
-            String encrypt = XPath.selectText(ApplicationConstants.REQUEST_XML_ENCRYPT, dom);
-//            String toUserName = XPath.selectText("//ToUserName", dom);
-//            String appId = XPath.selectText("//AppId", dom);
+            String encrypt = XPath.selectText(
+                    ApplicationConstants.REQUEST_XML_ENCRYPT, dom);
+            // String toUserName = XPath.selectText("//ToUserName", dom);
+            // String appId = XPath.selectText("//AppId", dom);
 
             String content = null;
             try
@@ -278,7 +272,6 @@ public class WechatAuthorization extends Controller
             Document domEncrypt = XML.fromString(content);
             TestUtils.recordInFile("content: " + content, "content.txt");
             String infoType = XPath.selectText("//InfoType", domEncrypt);
-            System.out.println(infoType);
             if ("component_verify_ticket".equals(infoType))
             {
                 synchronized (ticket)
@@ -290,8 +283,10 @@ public class WechatAuthorization extends Controller
                     // 构造参数，更新数据库
                     Map<String, String> map = new HashMap<String, String>();
                     map.put(ApplicationConstants.DB_THIRD_JSON_TICKET, ticket);
+                    map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TICKET,
+                            new Date().getTime() + "");
                     MongoDBDao.getInstance().update(
-                            ApplicationConstants.DB_Third_JSON_APPID,
+                            ApplicationConstants.DB_Third_JSON_APP_ID,
                             WechatThirdInformation.appID, map);
                     return ok("success");
                 }
@@ -302,10 +297,11 @@ public class WechatAuthorization extends Controller
                 {
                     String authorizerAppid = XPath.selectText(
                             "//AuthorizerAppid", domEncrypt);
-                    System.out.println(authorizerAppid);
 
-                    //删除数据库中的appid
-                    MongoDBDao.getInstance().delete(ApplicationConstants.DB_USER_JSON_APPID, authorizerAppid);
+                    // 删除数据库中的appid
+                    MongoDBDao.getInstance().delete(
+                            ApplicationConstants.DB_USER_JSON_APP_ID,
+                            authorizerAppid);
                     return ok("success");
                 }
                 else
@@ -329,6 +325,7 @@ public class WechatAuthorization extends Controller
 
     /**
      * 获取ticket
+     * 
      * @return ticket
      */
     public static String getTicket()
@@ -341,7 +338,7 @@ public class WechatAuthorization extends Controller
 
         // 如果是空，则从数据库查询第三方帐号信息
         JsonNode result = MongoDBDao.getInstance().findJsonNode(
-                ApplicationConstants.DB_Third_JSON_APPID,
+                ApplicationConstants.DB_Third_JSON_APP_ID,
                 WechatThirdInformation.appID);
         String updateTime = result.get(
                 ApplicationConstants.DB_JSON_UPDATETIME_FOR_TICKET).asText();

@@ -1,6 +1,7 @@
 package common;
 
 import com.ning.http.client.AsyncHttpClient;
+
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
@@ -22,12 +23,17 @@ public class HttpClientUtils
     /**
      * 请求内容为xml
      */
-    private static final String CONTENT_XML = "application/xml";
+    private static final String CONTENT_XML = "application/xml;charset=utf-8";
 
     /**
      * 请求内容为json
      */
-    private static final String CONTENT_JSON = "application/json";
+    private static final String CONTENT_JSON = "application/json;charset=utf-8";
+
+    /**
+     * 请求内容为文本
+     */
+    private static final String CONTENT_TEXT = "application/text;charset=utf-8";
 
     /**
      * 用post请求方式传输一个xml请求并获取应答字符串
@@ -81,38 +87,51 @@ public class HttpClientUtils
     }
 
     /**
-     * 用get请求方式传输一个json请求体并获取应答字符串
+     * 用get请求方式获取应答字符串
      *
      * @param url
      *            请求地址
-     * @param requestBody
-     *            请求体
      * @return 应答字符串
      */
-    public static String getResponseByGetMethodJson(String url,
-            String requestBody)
+    public static String getResponseByGetMethod(String url)
     {
         AsyncHttpClient client = new AsyncHttpClient();
         AsyncHttpClient.BoundRequestBuilder br = client.prepareGet(url);
-        return getResponseString(br, CONTENT_JSON, requestBody);
+        String response = null;
+        try
+        {
+            response = client.prepareGet(url).setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET).execute().get().getResponseBody();
+        }
+        catch (ExecutionException | InterruptedException | IOException e)
+        {
+            e.printStackTrace();
+        }
+        return response;
     }
 
     /**
      * 按要求的请求类型执行请求获取就答字符串
-     * @param br BoundRequestBuilder
-     * @param content 内容
-     * @param requestBody 请求体
+     * 
+     * @param br
+     *            BoundRequestBuilder
+     * @param contentType
+     *            内容
+     * @param requestBody
+     *            请求体
      * @return 应答字符串
      */
     private static String getResponseString(
-            AsyncHttpClient.BoundRequestBuilder br, String content,
+            AsyncHttpClient.BoundRequestBuilder br, String contentType,
             String requestBody)
     {
-        try {
-            return br.setHeader(HEADER_CONTENT_TYPE, content)
-                    .setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET).setBody(requestBody)
-                    .execute().get().getResponseBody();
-        } catch (ExecutionException | InterruptedException | IOException e) {
+        try
+        {
+            return br.setHeader(HEADER_CONTENT_TYPE, contentType)
+                    .setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET)
+                    .setBody(requestBody).execute().get().getResponseBody();
+        }
+        catch(ExecutionException | InterruptedException | IOException e)
+        {
             e.printStackTrace();
         }
         return null;

@@ -43,6 +43,8 @@ public class GetAccessToken
     public static String getAccessToken(String apiUrl, String requestBody,
             String fieldName)
     {
+        System.out.println("In getAccessToken.");
+        System.out.println(apiUrl);
         String response = HttpClientUtils.getResponseByPostMethodJson(apiUrl,
                 requestBody);
 
@@ -50,6 +52,8 @@ public class GetAccessToken
         JsonNode jsonNode = Json.parse(response);
         TestUtils.recordInFile("AccessToken = " + jsonNode, "accessToken.txt");
         String token = jsonNode.get(fieldName).asText();
+        System.out.println("jsonNode = " + jsonNode);
+        System.out.println(token);
 
         if (token != null)
         {
@@ -67,7 +71,7 @@ public class GetAccessToken
     {
         // 用appId查询user信息
         MongoDBDao dao = MongoDBDao.getInstance();
-        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_USER_JSON_APPID, appId);
+        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_USER_JSON_APP_ID, appId);
         String token = jsonNode.get(
                 ApplicationConstants.DB_USER_JSON_ACCESS_TOKEN).asText();
         String updateTime = jsonNode.get(
@@ -78,25 +82,25 @@ public class GetAccessToken
         {
             //构造请求数据
             ObjectNode body = Json.newObject();
-            body.put(ApplicationConstants.DB_Third_JSON_APPID,
+            body.put(ApplicationConstants.DB_Third_JSON_APP_ID,
                     WechatThirdInformation.appID);
-            body.put(ApplicationConstants.DB_USER_JSON_APPID,
-                    jsonNode.get(ApplicationConstants.DB_USER_JSON_APPID)
+            body.put(ApplicationConstants.DB_USER_JSON_APP_ID,
+                    jsonNode.get(ApplicationConstants.DB_USER_JSON_APP_ID)
                             .asText());
             body.put(ApplicationConstants.DB_USER_JSON_REFRESH_TOKEN, jsonNode
                     .get(ApplicationConstants.DB_USER_JSON_REFRESH_TOKEN)
                     .asText());
-            String requestBody = body.toString();
             token = getAccessToken(
                     WechatAPIURLUtils
                             .getPublicAcessTokenURL(getThirdAccessToken()),
-                    requestBody, ApplicationConstants.DB_USER_JSON_ACCESS_TOKEN);
+                    body.toString(), ApplicationConstants.DB_USER_JSON_ACCESS_TOKEN);
 
             //构造参数更新数据库中的Token和更新时间
             Map<String, String> map = new HashMap<String, String>();
-            map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, token);
+            map.put(ApplicationConstants.DB_USER_JSON_ACCESS_TOKEN, token);
             map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, new Date().getTime() + "");
-            dao.update(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, WechatThirdInformation.appID, map);
+            dao.update(ApplicationConstants.DB_USER_JSON_APP_ID, jsonNode.get(ApplicationConstants.DB_USER_JSON_APP_ID)
+                    .asText(), map);
         }
 
         return token;
@@ -106,7 +110,7 @@ public class GetAccessToken
     {
         // 用appId查询第三方平台信息
         MongoDBDao dao = MongoDBDao.getInstance();
-        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_Third_JSON_APPID, WechatThirdInformation.appID);
+        JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_Third_JSON_APP_ID, WechatThirdInformation.appID);
         JsonNode temp = jsonNode.get(
                 ApplicationConstants.DB_THIRD_JSON_ACCESS_TOKEN);
 
@@ -126,7 +130,7 @@ public class GetAccessToken
         {
             //构造请求数据
             ObjectNode body = Json.newObject();
-            body.put(ApplicationConstants.DB_Third_JSON_APPID,
+            body.put(ApplicationConstants.DB_Third_JSON_APP_ID,
                     WechatThirdInformation.appID);
             body.put(KEY_APP_SECRET, WechatThirdInformation.appSecret);
             body.put(VERIFY_TICKET, WechatAuthorization.getTicket());
@@ -139,7 +143,7 @@ public class GetAccessToken
             Map<String, String> map = new HashMap<String, String>();
             map.put(ApplicationConstants.DB_THIRD_JSON_ACCESS_TOKEN, token);
             map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, new Date().getTime() + "");
-            dao.update(ApplicationConstants.DB_Third_JSON_APPID, WechatThirdInformation.appID, map);
+            dao.update(ApplicationConstants.DB_Third_JSON_APP_ID, WechatThirdInformation.appID, map);
         }
 
         return token;

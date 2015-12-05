@@ -17,7 +17,7 @@ public class ApplicationConstants {
     /**
      * 数据库user的Json结构中授权人appID的Key值
      */
-    public static final String DB_USER_JSON_APPID = "authorizer_appid";
+    public static final String DB_USER_JSON_APP_ID = "authorizer_appid";
 
     /**
      * 数据库user的Json结构中token刷新时间的Key值
@@ -52,7 +52,7 @@ public class ApplicationConstants {
     /**
      * 数据库user的Json结构中刷新令牌的Key值
      */
-    public static final String DB_USER_JSON_USER_ID = "userID";
+    public static final String DB_USER_JSON_ROBOT_ID = "robotID";
 
     /**
      * 数据库Third的Json结构appID的Key值
@@ -73,11 +73,6 @@ public class ApplicationConstants {
      * 数据库Third的Json结构aeskey的Key值
      */
     public static final String DB_Third_JSON_AESKEY = "aeskey";
-
-    /**
-     * 数据库Third的Json结构appID的Key值
-     */
-    public static final String DB_Third_JSON_APPID = "component_appid";
 
     /**
      * 请求URL中msg_signature变量名

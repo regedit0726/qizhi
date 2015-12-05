@@ -21,7 +21,7 @@ public class WechatProcess
     /**
      * 智能机器人接口
      */
-    private static final String APIURL_USER_ID = "&userId=";
+    private static final String APIURL_USER_ID = "&appKey=";
 
     /**
      * Json中answer的键值
@@ -35,20 +35,20 @@ public class WechatProcess
      *            问题
      * @param appId
      *            appID
-     * @param userId
+     * @param appKey
      *            用户ID
      * @return String
      */
-    public String processWechatMag(String question, String appId, String userId)
+    public String processWechatMag(String question, String appId, String appKey)
     {
 
         try
         {
             // 将question转换为URL编码
             String targetUrl = APIURL
-                    + URLEncoder.encode(question, ApplicationConstants.CHARSET) + APIURL_APP_ID + appId + APIURL_USER_ID + userId;
-            String response = HttpClientUtils.getResponseByGetMethodJson(
-                    targetUrl, "");
+                    + URLEncoder.encode(question, ApplicationConstants.CHARSET)
+                    + APIURL_APP_ID + appId + APIURL_USER_ID + appKey;
+            String response = HttpClientUtils.getResponseByGetMethod(targetUrl);
             // 获取answer
             if (response != null)
             {
@@ -79,8 +79,7 @@ public class WechatProcess
             // 将question转换为URL编码
             String targetUrl = APIURL
                     + URLEncoder.encode(question, ApplicationConstants.CHARSET);
-            String response = HttpClientUtils.getResponseByGetMethodJson(
-                    targetUrl, "");
+            String response = HttpClientUtils.getResponseByGetMethod(targetUrl);
             // 获取answer
             if (response != null)
             {

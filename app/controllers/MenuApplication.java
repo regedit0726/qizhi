@@ -26,17 +26,21 @@ public class MenuApplication extends Controller
 
     /**
      * 创建菜单
+     * 
      * @return Result
      */
     public Result createMenu()
     {
+        System.out.println("In createMenu");
         String menu = request().getQueryString(REQUEST_QUERY_STRING_MENU);
         String appID = request().getQueryString(REQUEST_QUERY_APP_id);
+        System.out.println(menu);
         try
         {
-            HttpClientUtils.getResponseByPostMethodJson(WechatAPIURLUtils
-                    .getCreateMenuURL(GetAccessToken
+            String response = HttpClientUtils.getResponseByPostMethodJson(
+                    WechatAPIURLUtils.getCreateMenuURL(GetAccessToken
                             .getPublicAccessToken(appID)), menu);
+            System.out.println(response);
         }
         catch(UnsupportedEncodingException e)
         {
@@ -48,18 +52,20 @@ public class MenuApplication extends Controller
 
     /**
      * 查询菜单
+     * 
      * @return Result
      */
     public Result queryMenu()
     {
+        System.out.println("In queryMenu");
         String result = null;
-        String menu = request().getQueryString(REQUEST_QUERY_STRING_MENU);
         String appID = request().getQueryString(REQUEST_QUERY_APP_id);
         try
         {
-            result = HttpClientUtils.getResponseByPostMethodJson(WechatAPIURLUtils
-                            .getQueryMenuURL(GetAccessToken.getPublicAccessToken(appID)),
-                    menu);
+            result = HttpClientUtils.getResponseByGetMethod(
+                    WechatAPIURLUtils.getQueryMenuURL(GetAccessToken
+                            .getPublicAccessToken(appID)));
+            System.out.println(result);
         }
         catch(UnsupportedEncodingException e)
         {
@@ -70,17 +76,21 @@ public class MenuApplication extends Controller
 
     /**
      * 删除菜单
+     * 
      * @return Result
      */
     public Result deleteMenu()
     {
+        System.out.println("In deleteMenu");
         String menu = request().getQueryString(REQUEST_QUERY_STRING_MENU);
         String appID = request().getQueryString(REQUEST_QUERY_APP_id);
+        System.out.println(menu);
         try
         {
-            HttpClientUtils.getResponseByPostMethodJson(WechatAPIURLUtils
-                            .getDeleteMenuURL(GetAccessToken.getPublicAccessToken(appID)),
-                    menu);
+            String result = HttpClientUtils.getResponseByGetMethod(
+                    WechatAPIURLUtils.getDeleteMenuURL(GetAccessToken
+                            .getPublicAccessToken(appID)));
+            System.out.println(result);
         }
         catch(UnsupportedEncodingException e)
         {
