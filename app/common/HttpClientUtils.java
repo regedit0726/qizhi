@@ -100,7 +100,8 @@ public class HttpClientUtils
         String response = null;
         try
         {
-            response = client.prepareGet(url).setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET).execute().get().getResponseBody();
+            byte[] bytes = client.prepareGet(url).setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET).execute().get().getResponseBodyAsBytes();
+            response = new String(bytes, 0, bytes.length, ApplicationConstants.CHARSET);
         }
         catch (ExecutionException | InterruptedException | IOException e)
         {
