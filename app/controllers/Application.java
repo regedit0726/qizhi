@@ -431,8 +431,6 @@ public class Application extends Controller
 //                "       }]\n" +
 //                " }";
 
-        String requestBody ="{\"button\":\"\"}";
-
 //         String requestBody = "{\n" +
 //         "     \"button\":[\n" +
 //         "     {\t\n" +
@@ -441,13 +439,13 @@ public class Application extends Controller
 //         "          \"url\":\"http://sports.163.com/\"\n" +
 //         "      }\n" +
 //         " ]}";
-         String response =
-         HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/createMenu?appID=wx5bb7a43a9bcb67ae&menu="
-         + requestBody, "{}");
+        
+//         String response =
+//         HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/createMenu?appID=wx5bb7a43a9bcb67ae&menu="
+//         + requestBody, "{}");
 
 //        String response =
-//        HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/deleteMenu?appID=wx5bb7a43a9bcb67ae&menu="
-//                + requestBody, "{}");
+//        HttpClientUtils.getResponseByGetMethod("http://mongo.smartnlp.cn/deleteMenu?appID=wx5bb7a43a9bcb67ae&menu=");
 
 //        String response = HttpClientUtils
 //                .getResponseByGetMethod("http://mongo.smartnlp.cn/queryMenu?appID=wx5bb7a43a9bcb67ae");

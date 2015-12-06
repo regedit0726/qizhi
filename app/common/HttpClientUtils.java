@@ -126,9 +126,11 @@ public class HttpClientUtils
     {
         try
         {
-            return br.setHeader(HEADER_CONTENT_TYPE, contentType)
+            byte[] bytes = br.setHeader(HEADER_CONTENT_TYPE, contentType)
                     .setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET)
-                    .setBody(requestBody).execute().get().getResponseBody();
+                    .setBody(requestBody).execute().get().getResponseBodyAsBytes();
+            String response = new String(bytes, 0, bytes.length, ApplicationConstants.CHARSET);
+            return response;
         }
         catch(ExecutionException | InterruptedException | IOException e)
         {
