@@ -1,14 +1,21 @@
 package controllers;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.xml.transform.TransformerException;
 
-import common.HttpClientUtils;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import common.WechatAPIURLUtils;
+import common.WechatThirdInformation;
+import controllers.authorization.GetAccessToken;
 import org.w3c.dom.Document;
 
+import play.libs.Json;
 import play.libs.XML;
 import play.libs.XPath;
 import play.mvc.BodyParser;
@@ -17,9 +24,10 @@ import play.mvc.Http;
 import play.mvc.Result;
 import test.TestUtils;
 import Beans.TextResponseXml;
-import Dao.MongoDBDao;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import common.ApplicationConstants;
+import common.HttpClientUtils;
 
 import controllers.wechatAes.AesException;
 import controllers.wechatAes.WXBizMsgCrypt;
@@ -46,17 +54,17 @@ public class Application extends Controller
     /**
      * 请求xml中接收者的XPath
      */
-    private static final String REQUEST_XML_TO_USER_NAME = "//ToUserName";
+    private static final String REQUEST_XPATH_TO_USER_NAME = "//ToUserName";
 
     /**
      * 请求xml中发送者的XPath
      */
-    private static final String REQUEST_XML_FROM_USER_NAME = "//FromUserName";
+    private static final String REQUEST_XPATH_FROM_USER_NAME = "//FromUserName";
 
     /**
      * 请求xml中消息类型的XPath
      */
-    private static final String REQUEST_XML_MSGTYPE = "//MsgType";
+    private static final String REQUEST_XPATH_MSGTYPE = "//MsgType";
 
     /**
      * 请求xml中创建时间的XPath
@@ -66,22 +74,27 @@ public class Application extends Controller
     /**
      * 请求xml中消息ID的XPath
      */
-    private static final String REQUEST_XML_TEXT_MSGID = "//MsgId";
+    private static final String REQUEST_XPATH_TEXT_MSGID = "//MsgId";
 
     /**
      * 请求xml中文本内容的XPath
      */
-    private static final String REQUEST_XML_TEXT_CONTENT = "//Content";
+    private static final String REQUEST_XPATH_TEXT_CONTENT = "//Content";
 
     /**
      * 请求xml中消息ID的XPath
      */
-    private static final String REQUEST_XML_EVENT_EVENTKEY = "//EventKey";
+    private static final String REQUEST_XPATH_EVENT_EVENTKEY = "//EventKey";
 
     /**
      * 请求xml中事件类型的XPath
      */
-    private static final String REQUEST_XML_EVENT_TYPE = "//Event";
+    private static final String REQUEST_XPATH_EVENT_TYPE = "//Event";
+
+    /**
+     * 请求xml中发送者的创建时间
+     */
+    private static final String REQUEST_XML_MSGTYPE = "MsgType";
 
     /**
      * 请求xml中发送者的创建时间
@@ -187,6 +200,7 @@ public class Application extends Controller
 
         // 获取xml格式数据
         Document dom = XML.fromString(str);
+        System.out.println(dom.toString());
         if (dom == null)
         {
             return badRequest("Expecting Xml data");
@@ -194,18 +208,19 @@ public class Application extends Controller
         else
         {
             // 判断消息类型
-            String msgType = XPath.selectText(REQUEST_XML_EVENT_TYPE, dom);
-
+            String msgType = XPath.selectText(REQUEST_XPATH_MSGTYPE, dom);
+            System.out.println(msgType);
             // 文本消息处理
-            if (msgType.equals(REQUEST_XML_MSGTYPE_TEXT))
+            if (REQUEST_XML_MSGTYPE_TEXT.equals(msgType))
             {
-                return replyTextMsg(dom);
+                System.out.println("In 文本处理");
+                return replyTextMsg(dom, wechatAppId);
             }
 
             // 事件消息响应
-            else if (msgType.equals(REQUEST_XML_MSGTYPE_EVENT))
+            else if (REQUEST_XML_MSGTYPE_EVENT.equals(msgType))
             {
-                String event = XPath.selectText(REQUEST_XML_EVENT_TYPE, dom);
+                String event = XPath.selectText(REQUEST_XPATH_EVENT_TYPE, dom);
                 return ok(ApplicationConstants.EMPTY_STRING);
             }
             else
@@ -221,14 +236,15 @@ public class Application extends Controller
         return ok(echostr);
     }
 
-    private Result replyTextMsg(Document dom) throws AesException
+    private Result replyTextMsg(Document dom, String wechatAppId)
+            throws AesException
     {
         // 读取dom信息
-        toUserName = XPath.selectText(REQUEST_XML_TO_USER_NAME, dom);
-        fromUserName = XPath.selectText(REQUEST_XML_FROM_USER_NAME, dom);
-        String content = XPath.selectText(REQUEST_XML_TEXT_CONTENT, dom);
-        String msgId = XPath.selectText(REQUEST_XML_TEXT_MSGID, dom);
-
+        toUserName = XPath.selectText(REQUEST_XPATH_TO_USER_NAME, dom);
+        fromUserName = XPath.selectText(REQUEST_XPATH_FROM_USER_NAME, dom);
+        String content = XPath.selectText(REQUEST_XPATH_TEXT_CONTENT, dom);
+        String msgId = XPath.selectText(REQUEST_XPATH_TEXT_MSGID, dom);
+        System.out.println("In replyTextMsg");
         // 无content内容不回复
         if (content == null)
         {
@@ -249,14 +265,26 @@ public class Application extends Controller
         }
 
         // 调用接口获取回答
-        String answer = new WechatProcess().processWechatMag(content);
+        String answer = new WechatProcess().processWechatMag(content,
+                wechatAppId);
 
         // 把msgId从消息队列中删掉
         synchronized (messageSet)
         {
             messageSet.remove(msgId);
         }
-        return reply(answer == null ? ApplicationConstants.EMPTY_STRING : answer);
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                sendTextMsgByCustomAPI(wechatAppId);
+            }
+        }, 10000);
+        return ok(ApplicationConstants.EMPTY_STRING);
+        // return reply(answer == null ? ApplicationConstants.EMPTY_STRING :
+        // answer);
     }
 
     private Result reply(String answer) throws AesException
@@ -303,8 +331,8 @@ public class Application extends Controller
 
         Document dom = XML.fromString(str);
         String msgType = XPath.selectText(REQUEST_XML_MSGTYPE, dom);
-        toUserName = XPath.selectText(REQUEST_XML_TO_USER_NAME, dom);
-        fromUserName = XPath.selectText(REQUEST_XML_FROM_USER_NAME, dom);
+        toUserName = XPath.selectText(REQUEST_XPATH_TO_USER_NAME, dom);
+        fromUserName = XPath.selectText(REQUEST_XPATH_FROM_USER_NAME, dom);
 
         String answer = ApplicationConstants.EMPTY_STRING;
         if (REQUEST_XML_MSGTYPE_EVENT.equals(msgType))
@@ -318,7 +346,7 @@ public class Application extends Controller
         }
         else if (REQUEST_XML_MSGTYPE_TEXT.equals(msgType))
         {
-            content = XPath.selectText(REQUEST_XML_TEXT_CONTENT, dom);
+            content = XPath.selectText(REQUEST_XPATH_TEXT_CONTENT, dom);
             String splitContent[] = content.split(":");
             if (ALLNET_PUBLISH_TEXT_CONTENT1.equals(content))
             {
@@ -338,7 +366,7 @@ public class Application extends Controller
         }
         else
         {
-            answer = "我不明白你的意思";
+            answer = "我不明白您的意思";
         }
 
         // 获取回复内容失败，返回空串，不回复
@@ -349,6 +377,29 @@ public class Application extends Controller
 
         // 获取成功，则组装回复xml，加密并回复
         return reply(answer);
+    }
+
+    private void sendTextMsgByCustomAPI(String appID)
+    {
+        ObjectNode body = Json.newObject();
+        ObjectNode content = Json.newObject();
+        body.put("touser", fromUserName);
+        body.put("msgtype", "text");
+        content.put("content", "让您久等了。");
+        body.put("text", content);
+        System.out.println(body.toString());
+        String response = null;
+        try
+        {
+            response = HttpClientUtils.getResponseByPostMethodJson(
+                    WechatAPIURLUtils.getSendCustomMessageURL(GetAccessToken
+                            .getPublicAccessToken(appID)), body.toString());
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
+        System.out.println(response);
     }
 
     /**
@@ -379,81 +430,81 @@ public class Application extends Controller
         // JsonNode node = jsonNodeInfo.get("authorization_info");
         // MongoDBDao.getInstance().insert(node.toString());
 
-//         String requestBody = "{\n" +
-//         "     \"button\":[\n" +
-//         "     {\t\n" +
-//         "          \"type\":\"view\",\n" +
-//         "          \"name\":\"今日体育\",\n" +
-//         "          \"url\":\"http://sports.163.com/\"\n" +
-//         "      },\n" +
-//         "      {\n" +
-//         "           \"name\":\"菜单\",\n" +
-//         "           \"sub_button\":[\n" +
-//         "           {\t\n" +
-//         "               \"type\":\"view\",\n" +
-//         "               \"name\":\"搜索\",\n" +
-//         "               \"url\":\"http://www.soso.com/\"\n" +
-//         "            },\n" +
-//         "            {\n" +
-//         "               \"type\":\"view\",\n" +
-//         "               \"name\":\"视频\",\n" +
-//         "               \"url\":\"http://v.qq.com/\"\n" +
-//         "            },\n" +
-//         "            {\n" +
-//         "               \"type\":\"view\",\n" +
-//         "               \"name\":\"赞一下我们\",\n" +
-//         "               \"url\":\"http://www.baidu.com/\"\n" +
-//         "            }]\n" +
-//         "       }]\n" +
-//         " }";
+        // String requestBody = "{\n" +
+        // "     \"button\":[\n" +
+        // "     {\t\n" +
+        // "          \"type\":\"view\",\n" +
+        // "          \"name\":\"今日体育\",\n" +
+        // "          \"url\":\"http://sports.163.com/\"\n" +
+        // "      },\n" +
+        // "      {\n" +
+        // "           \"name\":\"菜单\",\n" +
+        // "           \"sub_button\":[\n" +
+        // "           {\t\n" +
+        // "               \"type\":\"view\",\n" +
+        // "               \"name\":\"搜索\",\n" +
+        // "               \"url\":\"http://www.soso.com/\"\n" +
+        // "            },\n" +
+        // "            {\n" +
+        // "               \"type\":\"view\",\n" +
+        // "               \"name\":\"视频\",\n" +
+        // "               \"url\":\"http://v.qq.com/\"\n" +
+        // "            },\n" +
+        // "            {\n" +
+        // "               \"type\":\"view\",\n" +
+        // "               \"name\":\"赞一下我们\",\n" +
+        // "               \"url\":\"http://www.baidu.com/\"\n" +
+        // "            }]\n" +
+        // "       }]\n" +
+        // " }";
 
+        // String requestBody = "{\n" +
+        // "     \"button\":[\n" +
+        // "     {\t\n" +
+        // "          \"type\":\"view\",\n" +
+        // "          \"name\":\"今日体育\",\n" +
+        // "          \"url\":\"http://sports.163.com/\"\n" +
+        // "      },\n" +
+        // "      {\n" +
+        // "           \"name\":\"菜单\",\n" +
+        // "           \"sub_button\":[\n" +
+        // "           {\t\n" +
+        // "               \"type\":\"view\",\n" +
+        // "               \"name\":\"搜索\",\n" +
+        // "               \"url\":\"http://www.soso.com/\"\n" +
+        // "            },\n" +
+        // "            {\n" +
+        // "               \"type\":\"view\",\n" +
+        // "               \"name\":\"视频\",\n" +
+        // "               \"url\":\"http://v.qq.com/\"\n" +
+        // "            }\n" +
+        // "       }]\n" +
+        // " }";
 
-//        String requestBody = "{\n" +
-//                "     \"button\":[\n" +
-//                "     {\t\n" +
-//                "          \"type\":\"view\",\n" +
-//                "          \"name\":\"今日体育\",\n" +
-//                "          \"url\":\"http://sports.163.com/\"\n" +
-//                "      },\n" +
-//                "      {\n" +
-//                "           \"name\":\"菜单\",\n" +
-//                "           \"sub_button\":[\n" +
-//                "           {\t\n" +
-//                "               \"type\":\"view\",\n" +
-//                "               \"name\":\"搜索\",\n" +
-//                "               \"url\":\"http://www.soso.com/\"\n" +
-//                "            },\n" +
-//                "            {\n" +
-//                "               \"type\":\"view\",\n" +
-//                "               \"name\":\"视频\",\n" +
-//                "               \"url\":\"http://v.qq.com/\"\n" +
-//                "            }\n" +
-//                "       }]\n" +
-//                " }";
+        // String requestBody = "{\n" +
+        // "     \"button\":[\n" +
+        // "     {\t\n" +
+        // "          \"type\":\"view\",\n" +
+        // "          \"name\":\"今日体育\",\n" +
+        // "          \"url\":\"http://sports.163.com/\"\n" +
+        // "      }\n" +
+        // " ]}";
 
-//         String requestBody = "{\n" +
-//         "     \"button\":[\n" +
-//         "     {\t\n" +
-//         "          \"type\":\"view\",\n" +
-//         "          \"name\":\"今日体育\",\n" +
-//         "          \"url\":\"http://sports.163.com/\"\n" +
-//         "      }\n" +
-//         " ]}";
+        // String response =
+        // HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/createMenu?appID=wx5bb7a43a9bcb67ae&menu="
+        // + requestBody, "{}");
 
-//         String response =
-//         HttpClientUtils.getResponseByPostMethodJson("http://mongo.smartnlp.cn/createMenu?appID=wx5bb7a43a9bcb67ae&menu="
-//         + requestBody, "{}");
+        // String response =
+        // HttpClientUtils.getResponseByGetMethod("http://mongo.smartnlp.cn/deleteMenu?appID=wx5bb7a43a9bcb67ae&menu=");
 
-//        String response =
-//        HttpClientUtils.getResponseByGetMethod("http://mongo.smartnlp.cn/deleteMenu?appID=wx5bb7a43a9bcb67ae&menu=");
+        // String response = HttpClientUtils
+        // .getResponseByGetMethod("http://mongo.smartnlp.cn/queryMenu?appID=wx5bb7a43a9bcb67ae");
+        // System.out.println(response);
 
-//        String response = HttpClientUtils
-//                .getResponseByGetMethod("http://mongo.smartnlp.cn/queryMenu?appID=wx5bb7a43a9bcb67ae");
-//        System.out.println(response);
-
-//        String json = "{\"authorization_info\":{\"authorizer_appid\":\"wxe89b28b26851800c\",\"authorizer_access_token\":\"NatoFHFtQCgcF5JZqzwNZMR0X4LjkIJunmpIA5AUw5z2oW58YPI3i3HHMSY3FWPKrEEMd3O95Nr7oEtDwQaoxS1Rq5QMK9bIA057zMEv4ztiSMzTYSmFIGZ3TgQlHk93GVCdAGDZOV\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@hiXfDmvFbzu8kPyCqP5HgY-fUMdjZjHdu0S0jbtZTFU\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
-//        json = json.replaceAll(",\"func_info\":.*?\\]","");
-//        System.out.println(json);
+        // String json =
+        // "{\"authorization_info\":{\"authorizer_appid\":\"wxe89b28b26851800c\",\"authorizer_access_token\":\"NatoFHFtQCgcF5JZqzwNZMR0X4LjkIJunmpIA5AUw5z2oW58YPI3i3HHMSY3FWPKrEEMd3O95Nr7oEtDwQaoxS1Rq5QMK9bIA057zMEv4ztiSMzTYSmFIGZ3TgQlHk93GVCdAGDZOV\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@hiXfDmvFbzu8kPyCqP5HgY-fUMdjZjHdu0S0jbtZTFU\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
+        // json = json.replaceAll(",\"func_info\":.*?\\]","");
+        // System.out.println(json);
         return ok(views.html.index.render());
     }
 }

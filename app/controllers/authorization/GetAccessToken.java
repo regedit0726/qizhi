@@ -44,7 +44,6 @@ public class GetAccessToken
     {
         String response = HttpClientUtils.getResponseByPostMethodJson(apiUrl,
                 requestBody);
-
         // 获取component_access_token
         JsonNode jsonNode = Json.parse(response);
         String token = jsonNode.get(fieldName).asText();
@@ -65,15 +64,17 @@ public class GetAccessToken
     {
         // 用appId查询user信息
         MongoDBDao dao = MongoDBDao.getInstance();
+        System.out.println(appId);
         JsonNode jsonNode = dao.findJsonNode(ApplicationConstants.DB_USER_JSON_APP_ID, appId);
         String token = jsonNode.get(
                 ApplicationConstants.DB_USER_JSON_ACCESS_TOKEN).asText();
         String updateTime = jsonNode.get(
                 ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN).asText();
-
+        System.out.println(jsonNode.toString());
         // 如果数据库中的accessToken已过期，则调用接口重新获取
         if (new Date().getTime() > TOKEN_PERIOD + Long.valueOf(updateTime))
         {
+            System.out.println("Expired");
             //构造请求数据
             ObjectNode body = Json.newObject();
             body.put(ApplicationConstants.DB_Third_JSON_APP_ID,
@@ -96,7 +97,7 @@ public class GetAccessToken
             dao.update(ApplicationConstants.DB_USER_JSON_APP_ID, jsonNode.get(ApplicationConstants.DB_USER_JSON_APP_ID)
                     .asText(), map);
         }
-
+        System.out.println(token);
         return token;
     }
 

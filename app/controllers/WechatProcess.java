@@ -1,5 +1,7 @@
 package controllers;
 
+import Dao.MongoDBDao;
+import com.fasterxml.jackson.databind.JsonNode;
 import common.ApplicationConstants;
 import common.HttpClientUtils;
 import org.jsoup.Jsoup;
@@ -38,13 +40,15 @@ public class WechatProcess
      *            问题
      * @param appId
      *            appID
-     * @param appKey
-     *            用户ID
      * @return String
      */
-    public String processWechatMag(String question, String appId, String appKey)
+    public String processWechatMag(String question, String appId)
     {
-
+        System.out.println(appId);
+        JsonNode jsonNode = MongoDBDao.getInstance().findJsonNode(ApplicationConstants.DB_USER_JSON_APP_ID, appId);
+        String appKey = jsonNode.get(ApplicationConstants.DB_USER_JSON_ROBOT_ID).asText();
+        System.out.println(appId);
+        System.out.println(appKey);
         try
         {
             // 将question转换为URL编码
