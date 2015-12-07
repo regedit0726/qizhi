@@ -82,7 +82,7 @@ public class WechatAPIURLUtils
 
     /**
      * 返回登录授权接口地址
-     * 
+     * g
      * @param preAuthCode
      *            预授权码
      * @param redirectURI

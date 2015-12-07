@@ -206,7 +206,7 @@ public class Application extends Controller
             else if (msgType.equals(REQUEST_XML_MSGTYPE_EVENT))
             {
                 String event = XPath.selectText(REQUEST_XML_EVENT_TYPE, dom);
-                return ok("");
+                return ok(ApplicationConstants.EMPTY_STRING);
             }
             else
             {
@@ -232,7 +232,7 @@ public class Application extends Controller
         // 无content内容不回复
         if (content == null)
         {
-            return ok("");
+            return ok(ApplicationConstants.EMPTY_STRING);
         }
 
         // 检查是否微信服务器因超时5秒而重发的请求
@@ -256,7 +256,7 @@ public class Application extends Controller
         {
             messageSet.remove(msgId);
         }
-        return reply(answer == null ? "" : answer);
+        return reply(answer == null ? ApplicationConstants.EMPTY_STRING : answer);
     }
 
     private Result reply(String answer) throws AesException
@@ -306,7 +306,7 @@ public class Application extends Controller
         toUserName = XPath.selectText(REQUEST_XML_TO_USER_NAME, dom);
         fromUserName = XPath.selectText(REQUEST_XML_FROM_USER_NAME, dom);
 
-        String answer = "";
+        String answer = ApplicationConstants.EMPTY_STRING;
         if (REQUEST_XML_MSGTYPE_EVENT.equals(msgType))
         {
             // 模拟粉丝触发专用测试公众号的事件，并推送事件消息到专用测试公众号
@@ -344,7 +344,7 @@ public class Application extends Controller
         // 获取回复内容失败，返回空串，不回复
         if (answer == null)
         {
-            return ok("");
+            return ok(ApplicationConstants.EMPTY_STRING);
         }
 
         // 获取成功，则组装回复xml，加密并回复
@@ -451,6 +451,9 @@ public class Application extends Controller
 //                .getResponseByGetMethod("http://mongo.smartnlp.cn/queryMenu?appID=wx5bb7a43a9bcb67ae");
 //        System.out.println(response);
 
+//        String json = "{\"authorization_info\":{\"authorizer_appid\":\"wxe89b28b26851800c\",\"authorizer_access_token\":\"NatoFHFtQCgcF5JZqzwNZMR0X4LjkIJunmpIA5AUw5z2oW58YPI3i3HHMSY3FWPKrEEMd3O95Nr7oEtDwQaoxS1Rq5QMK9bIA057zMEv4ztiSMzTYSmFIGZ3TgQlHk93GVCdAGDZOV\",\"expires_in\":7200,\"authorizer_refresh_token\":\"refreshtoken@@@hiXfDmvFbzu8kPyCqP5HgY-fUMdjZjHdu0S0jbtZTFU\",\"func_info\":[{\"funcscope_category\":{\"id\":1}},{\"funcscope_category\":{\"id\":2}},{\"funcscope_category\":{\"id\":3}},{\"funcscope_category\":{\"id\":4}},{\"funcscope_category\":{\"id\":6}},{\"funcscope_category\":{\"id\":7}},{\"funcscope_category\":{\"id\":11}}]}}";
+//        json = json.replaceAll(",\"func_info\":.*?\\]","");
+//        System.out.println(json);
         return ok(views.html.index.render());
     }
 }

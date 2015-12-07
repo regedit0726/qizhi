@@ -32,7 +32,7 @@ public class WechatAuthorization extends Controller
     /**
      * ticket
      */
-    public volatile static String ticket = "";
+    public volatile static String ticket = ApplicationConstants.EMPTY_STRING;
 
     /**
      * ticket有效时长，十分钟，换算为毫秒数
@@ -65,6 +65,36 @@ public class WechatAuthorization extends Controller
     private static final String PRE_AUTH_CODE = "pre_auth_code";
 
     /**
+     * 推送事件类型的XPath值
+     */
+    private static final String XPATH_INFO_TYPE = "//InfoType";
+
+    /**
+     * 推送事件类型的Key值
+     */
+    private static final String INFO_TYPE_TICKET = "component_verify_ticket";
+
+    /**
+     * 推送事件类型的Key值
+     */
+    private static final String INFO_TYPE_UNAUTHORIZED = "unauthorized";
+
+    /**
+     * Ticket的XPath值
+     */
+    private static final String XPATH_VERIFY_TICKET = "//ComponentVerifyTicket";
+
+    /**
+     * 解除授权appID的XPath值
+     */
+    private static final String XPATH_AUTHORIZER_APPID = "//AuthorizerAppid";
+
+    /**
+     * 回复成功字符串
+     */
+    private static final String RESPONSE_SUCCESS = "success";
+
+    /**
      * 微信授权
      * 
      * @return Result 结果
@@ -75,7 +105,7 @@ public class WechatAuthorization extends Controller
     {
         // 获取预授权码
         String pre_code = getPreAuthCode();
-        String appKey = request().getQueryString("appKey");
+        String appKey = request().getQueryString(ApplicationConstants.PARAMETER_NAME_ROBOT_ID);
         System.out.println(appKey);
         if (appKey == null)
         {
@@ -126,13 +156,13 @@ public class WechatAuthorization extends Controller
             {
                 System.out
                         .println("Get_Pre_Auth_Code: pre_auth_code 数据异常：请求数据出错或返回数据解析错误");
-                return "";
+                return ApplicationConstants.EMPTY_STRING;
             }
         }
         else
         {
             System.out.println("Get_Pre_Auth_Code: 获取accessToken出错");
-            return "";
+            return ApplicationConstants.EMPTY_STRING;
         }
     }
 
@@ -170,7 +200,7 @@ public class WechatAuthorization extends Controller
         if (getAuthInfo(authCode, accessToken, appKey))
         {
             // 返回到授权结束后的指定页面
-            return redirect("");
+            return redirect(ApplicationConstants.EMPTY_STRING);
         }
         else
         {
@@ -208,6 +238,7 @@ public class WechatAuthorization extends Controller
         // 发送post请求，获取授权方appid和刷新令牌
         String resBody = HttpClientUtils.getResponseByPostMethodJson(
                 WechatAPIURLUtils.getAuthInfoURL(accessToken), requestBody);
+        resBody = resBody.replaceAll(",\"func_info\":.*?\\]",ApplicationConstants.EMPTY_STRING);
         JsonNode jsonNodeInfo = Json.parse(resBody);
         if (jsonNodeInfo == null)
         {
@@ -220,7 +251,7 @@ public class WechatAuthorization extends Controller
 
         Map<String, String> map = new HashMap<String, String>();
         map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN,
-                new Date().getTime() + "");
+                new Date().getTime() + ApplicationConstants.EMPTY_STRING);
         map.put(ApplicationConstants.DB_USER_JSON_ROBOT_ID, appKey);
         MongoDBDao.getInstance().insert(node.toString(), map);
         return true;
@@ -265,44 +296,42 @@ public class WechatAuthorization extends Controller
             catch(Exception e)
             {
                 e.printStackTrace();
-                return ok("");
+                return ok(ApplicationConstants.EMPTY_STRING);
             }
 
             // 获取数据类型
             Document domEncrypt = XML.fromString(content);
-            TestUtils.recordInFile("content: " + content, "content.txt");
-            String infoType = XPath.selectText("//InfoType", domEncrypt);
-            if ("component_verify_ticket".equals(infoType))
+            String infoType = XPath.selectText(XPATH_INFO_TYPE, domEncrypt);
+            if (INFO_TYPE_TICKET.equals(infoType))
             {
                 synchronized (ticket)
                 {
-                    ticket = XPath.selectText("//ComponentVerifyTicket",
+                    ticket = XPath.selectText(XPATH_VERIFY_TICKET,
                             domEncrypt);
-                    TestUtils.recordInFile("ticket: " + ticket, "content.txt");
 
                     // 构造参数，更新数据库
                     Map<String, String> map = new HashMap<String, String>();
                     map.put(ApplicationConstants.DB_THIRD_JSON_TICKET, ticket);
                     map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TICKET,
-                            new Date().getTime() + "");
+                            new Date().getTime() + ApplicationConstants.EMPTY_STRING);
                     MongoDBDao.getInstance().update(
                             ApplicationConstants.DB_Third_JSON_APP_ID,
                             WechatThirdInformation.appID, map);
-                    return ok("success");
+                    return ok(RESPONSE_SUCCESS);
                 }
             }
             else
             {
-                if ("unauthorized".equals(infoType))
+                if (INFO_TYPE_UNAUTHORIZED.equals(infoType))
                 {
-                    String authorizerAppid = XPath.selectText(
-                            "//AuthorizerAppid", domEncrypt);
+                    String authorizerAppid = XPath.selectText(XPATH_AUTHORIZER_APPID
+                            , domEncrypt);
 
                     // 删除数据库中的appid
                     MongoDBDao.getInstance().delete(
                             ApplicationConstants.DB_USER_JSON_APP_ID,
                             authorizerAppid);
-                    return ok("success");
+                    return ok();
                 }
                 else
                 {

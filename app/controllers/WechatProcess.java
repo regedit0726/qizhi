@@ -2,7 +2,10 @@ package controllers;
 
 import common.ApplicationConstants;
 import common.HttpClientUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import play.libs.Json;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 
@@ -52,7 +55,10 @@ public class WechatProcess
             // 获取answer
             if (response != null)
             {
-                return Json.parse(response).get(JSON_ANSWER).asText();
+                String answer = Json.parse(response).get(JSON_ANSWER).asText();
+                Document doc = Jsoup.parse(answer);
+                answer = doc.text();
+                return answer;
             }
         }
         catch(IOException e)
@@ -83,7 +89,10 @@ public class WechatProcess
             // 获取answer
             if (response != null)
             {
-                return Json.parse(response).get(JSON_ANSWER).asText();
+                String answer = Json.parse(response).get(JSON_ANSWER).asText();
+                Document doc = Jsoup.parse(answer);
+                answer = doc.text();
+                return answer;
             }
         }
         catch(IOException e)

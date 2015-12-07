@@ -8,7 +8,6 @@ import common.HttpClientUtils;
 import common.WechatAPIURLUtils;
 import common.WechatThirdInformation;
 import play.libs.Json;
-import test.TestUtils;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -43,17 +42,12 @@ public class GetAccessToken
     public static String getAccessToken(String apiUrl, String requestBody,
             String fieldName)
     {
-        System.out.println("In getAccessToken.");
-        System.out.println(apiUrl);
         String response = HttpClientUtils.getResponseByPostMethodJson(apiUrl,
                 requestBody);
 
         // 获取component_access_token
         JsonNode jsonNode = Json.parse(response);
-        TestUtils.recordInFile("AccessToken = " + jsonNode, "accessToken.txt");
         String token = jsonNode.get(fieldName).asText();
-        System.out.println("jsonNode = " + jsonNode);
-        System.out.println(token);
 
         if (token != null)
         {
@@ -98,7 +92,7 @@ public class GetAccessToken
             //构造参数更新数据库中的Token和更新时间
             Map<String, String> map = new HashMap<String, String>();
             map.put(ApplicationConstants.DB_USER_JSON_ACCESS_TOKEN, token);
-            map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, new Date().getTime() + "");
+            map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, new Date().getTime() + ApplicationConstants.EMPTY_STRING);
             dao.update(ApplicationConstants.DB_USER_JSON_APP_ID, jsonNode.get(ApplicationConstants.DB_USER_JSON_APP_ID)
                     .asText(), map);
         }
@@ -142,7 +136,7 @@ public class GetAccessToken
             //构造参数更新数据库中的Token和更新时间
             Map<String, String> map = new HashMap<String, String>();
             map.put(ApplicationConstants.DB_THIRD_JSON_ACCESS_TOKEN, token);
-            map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, new Date().getTime() + "");
+            map.put(ApplicationConstants.DB_JSON_UPDATETIME_FOR_TOKEN, new Date().getTime() + ApplicationConstants.EMPTY_STRING);
             dao.update(ApplicationConstants.DB_Third_JSON_APP_ID, WechatThirdInformation.appID, map);
         }
 
