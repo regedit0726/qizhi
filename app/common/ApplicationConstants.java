@@ -3,7 +3,8 @@ package common;
 /**
  * Created by Administrator on 2015/12/4.
  */
-public class ApplicationConstants {
+public class ApplicationConstants
+{
     /**
      * 编码格式
      */
@@ -93,4 +94,14 @@ public class ApplicationConstants {
      * 请求xml中加密消息的XPath
      */
     public static final String REQUEST_XML_ENCRYPT = "//Encrypt";
+
+    /**
+     * 空串
+     */
+    public static final String EMPTY_STRING = "";
+
+    /**
+     * 获取后台传递robotID参数名
+     */
+    public static final String PARAMETER_NAME_ROBOT_ID = "appKey";
 }

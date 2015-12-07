@@ -1,7 +1,9 @@
 package Beans;
 
+import common.ApplicationConstants;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -15,27 +17,34 @@ import java.io.ByteArrayOutputStream;
 /**
  * Created by Administrator on 2015/11/28.
  */
-public class ResponseXml {
+public class ResponseXml
+{
 
     /**
-     *xml默认根节点名
+     * xml默认根节点名
      */
     protected static final String DEFALT_ROOTNODE_NAME = "xml";
 
     /**
-     *document对象
+     * 输出流编码属性名
+     */
+    protected static final String OUTPUT_PROPERTYNAME_ENCODING = "encoding";
+
+    /**
+     * document对象
      */
     protected Document document;
 
     /**
-     *根节点
+     * 根节点
      */
     protected Element root;
 
     /**
      * 默认构造器,实例化document和root
      */
-    public ResponseXml(){
+    public ResponseXml()
+    {
         DocumentBuilder builder = null;
         try
         {
@@ -47,18 +56,24 @@ public class ResponseXml {
         {
             System.out.println(e.getMessage());
         }
-        this.document = builder.newDocument();
-        if(document != null)
+        document = builder.newDocument();
+        if (document != null)
         {
             root = document.createElement(DEFALT_ROOTNODE_NAME);
             document.appendChild(root);
+        }else
+        {
+            System.out.println("构造回复xml失败。");
         }
     }
 
     /**
      * 在根节点下添加节点
-     * @param nodeName 新节点名
-     * @param text 新节点内容
+     * 
+     * @param nodeName
+     *            新节点名
+     * @param text
+     *            新节点内容
      */
     protected void addNode(String nodeName, String text)
     {
@@ -69,8 +84,11 @@ public class ResponseXml {
 
     /**
      * 在根节点下添加CDATA节点
-     * @param nodeName 新节点名
-     * @param text 新CDATA节点内容
+     * 
+     * @param nodeName
+     *            新节点名
+     * @param text
+     *            新CDATA节点内容
      */
     protected void addCDATANode(String nodeName, String text)
     {
@@ -83,7 +101,6 @@ public class ResponseXml {
      * ResponseXml对象转字符串
      *
      * @return String
-     * @throws TransformerException
      */
     public String document2String()
     {
@@ -93,7 +110,7 @@ public class ResponseXml {
         {
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer t = tf.newTransformer();
-            t.setOutputProperty("encoding", "UTF-8");
+            t.setOutputProperty(OUTPUT_PROPERTYNAME_ENCODING, ApplicationConstants.CHARSET);
             bos = new ByteArrayOutputStream();
             t.transform(new DOMSource(document), new StreamResult(bos));
         }

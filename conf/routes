@@ -4,9 +4,9 @@
 
 # Home page
 GET      /                                      controllers.Application.index()
-#POST     /receiveXml/:wechatAppId               controllers.Application.receivePost(wechatAppId: String)
+POST     /receiveXml/:wechatAppId               controllers.Application.receivePost(wechatAppId: String)
 #GET      /receiveXml/:wechatAppId               controllers.Application.receiveGet(signature: String ?= "", timestamp: String ?= "", nonce: String ?= "", echostr: String ?= "",wechatAppId: String)
-POST     /receiveXml/:wechatAppId               controllers.Application.publish(wechatAppId: String)
+#POST     /receiveXml/:wechatAppId               controllers.Application.publish(wechatAppId: String)
 
 #authorization
 POST     /authorizationEventReception           controllers.authorization.WechatAuthorization.receiveTicket()

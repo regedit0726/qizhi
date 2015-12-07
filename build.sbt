@@ -9,7 +9,11 @@ scalaVersion := "2.11.6"
 libraryDependencies ++= Seq(
   javaJdbc,
   cache,
-  javaWs
+  javaWs,
+  "org.jsoup" % "jsoup" % "1.8.3",
+  "com.hynnet" % "mongo-java-driver" % "3.1.0",
+  "dom4j" % "dom4j" % "1.6.1",
+  "com.hynnet" % "bson" % "3.1.0"
 )
 
 // Play provides two styles of routers, one expects its actions to be injected, the

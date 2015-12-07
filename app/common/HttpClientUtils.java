@@ -100,6 +100,7 @@ public class HttpClientUtils
         String response = null;
         try
         {
+            //获取回复体并以UTF-8解析
             byte[] bytes = client.prepareGet(url).setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET).execute().get().getResponseBodyAsBytes();
             response = new String(bytes, 0, bytes.length, ApplicationConstants.CHARSET);
         }
@@ -127,6 +128,7 @@ public class HttpClientUtils
     {
         try
         {
+            //获取回复体并以UTF-8解析
             byte[] bytes = br.setHeader(HEADER_CONTENT_TYPE, contentType)
                     .setHeader(HEADER_CHARSET, ApplicationConstants.CHARSET)
                     .setBody(requestBody).execute().get().getResponseBodyAsBytes();
