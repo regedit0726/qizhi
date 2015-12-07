@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="SBT: com.typesafe.play:play-enhancer:1.1.0:jar">
-    <CLASSES>
-      <root url="jar://F:/activator-dist-1.3.6/repository/com.typesafe.play/play-enhancer/1.1.0/jars/play-enhancer.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
